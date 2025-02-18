@@ -658,8 +658,46 @@ const Login = () => {
     if (token) navigate("/my-profile");
   }, [token, navigate]);
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (token) {
+  //     toast.error("You're already logged in. Logout first.");
+  //     return;
+  //   }
+
+  //   setIsLoading(true);
+  //   try {
+  //     const url =
+  //       mode === "signup"
+  //         ? `${backendurl}/api/user/register`
+  //         : `${backendurl}/api/user/login`;
+
+  //     const payload =
+  //       mode === "signup" ? { name, email, password } : { email, password };
+
+  //     const { data } = await axios.post(url, payload);
+
+  //     if (data.success) {
+  //       localStorage.setItem("token", data.token);
+  //       setToken(data.token);
+  //       setIsLoggedin(true);
+  //       navigate(mode === "signup" ? "/email-verify" : "/");
+  //       toast.success(
+  //         mode === "signup"
+  //           ? "Account created! Check your email"
+  //           : "Welcome back!"
+  //       );
+  //     }
+  //   } catch (error) {
+  //     toast.error(error.response?.data?.message || "An error occurred");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (token) {
       toast.error("You're already logged in. Logout first.");
       return;
@@ -678,9 +716,13 @@ const Login = () => {
       const { data } = await axios.post(url, payload);
 
       if (data.success) {
+        const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+
         localStorage.setItem("token", data.token);
+        localStorage.setItem("expiresAt", expiresAt); // Store expiry time
         setToken(data.token);
         setIsLoggedin(true);
+
         navigate(mode === "signup" ? "/email-verify" : "/");
         toast.success(
           mode === "signup"

@@ -542,7 +542,7 @@ const Navbar = () => {
             scrollTo(0, 0);
           }}
           className="w-36 cursor-pointer hover:opacity-80 transition-opacity"
-          src={assets.logo} // Replace with your logo path
+          // src={assets.logo} // Replace with your logo path
           alt="logo"
         />
 

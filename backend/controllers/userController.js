@@ -54,11 +54,17 @@ const registerUser = async (req, res) => {
     const user = await newUser.save();
 
     // generate token
+
+    const expiresIn = 7 * 24 * 60 * 60 * 1000;
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
 
-    res.json({ success: true, token });
+    res.status(200).json({
+      success: true,
+      token,
+      expiresAt: Date.now() + expiresIn,
+    });
     // sending welcome email
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
@@ -77,6 +83,64 @@ const registerUser = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.json({ success: false, message: error.message });
+  }
+};
+
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input fields
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
+    }
+
+    // Validate email format
+    if (!validator.isEmail(email)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Enter a valid email" });
+    }
+
+    // Find user by email
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res
+        .status(404) // User not found should ideally be 404
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(401) // Unauthorized
+        .json({ success: false, message: "Incorrect password" });
+    }
+
+    // Generate JWT token
+
+    const expiresIn = 7 * 24 * 60 * 60 * 1000;
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return res.status(200).json({
+      success: true,
+      token,
+      expiresAt: Date.now() + expiresIn, // Send expiry timestamp
+    });
+  } catch (error) {
+    console.error("Error logging in user:", error);
+
+    // Return a generic message to avoid exposing sensitive details
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while logging in. Please try again later.",
+    });
   }
 };
 
@@ -122,57 +186,6 @@ const registerUser = async (req, res) => {
 //     res.json({ success: false, message: error.message });
 //   }
 // };
-
-const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validate input fields
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ success: false, message: "All fields are required" });
-    }
-
-    // Validate email format
-    if (!validator.isEmail(email)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Enter a valid email" });
-    }
-
-    // Find user by email
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      return res
-        .status(404) // User not found should ideally be 404
-        .json({ success: false, message: "User not found" });
-    }
-
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res
-        .status(401) // Unauthorized
-        .json({ success: false, message: "Incorrect password" });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    return res.status(200).json({ success: true, token });
-  } catch (error) {
-    console.error("Error logging in user:", error);
-
-    // Return a generic message to avoid exposing sensitive details
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred while logging in. Please try again later.",
-    });
-  }
-};
 
 // const logoutUser = async (req, res) => {
 //   try {
