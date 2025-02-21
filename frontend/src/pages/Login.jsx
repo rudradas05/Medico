@@ -717,7 +717,7 @@ const Login = () => {
       const { data } = await axios.post(url, payload);
 
       if (data.success) {
-        const expiresAt = Date.now() + 60 * 1000; // 7 days from now
+        const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
 
         localStorage.setItem("token", data.token);
         localStorage.setItem("expiresAt", expiresAt); // Store expiry time
