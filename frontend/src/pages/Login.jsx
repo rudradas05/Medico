@@ -651,7 +651,8 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { backendurl, token, setToken, setIsLoggedin } = useContext(AppContext);
+  const { backendurl, token, setToken, isLoggedin, setIsLoggedin } =
+    useContext(AppContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -716,12 +717,13 @@ const Login = () => {
       const { data } = await axios.post(url, payload);
 
       if (data.success) {
-        const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+        const expiresAt = Date.now() + 60 * 1000; // 7 days from now
 
         localStorage.setItem("token", data.token);
         localStorage.setItem("expiresAt", expiresAt); // Store expiry time
         setToken(data.token);
         setIsLoggedin(true);
+        console.log(isLoggedin);
 
         navigate(mode === "signup" ? "/email-verify" : "/");
         toast.success(

@@ -144,7 +144,8 @@ const AppContextProvider = (props) => {
     localStorage.getItem("token") ? localStorage.getItem("token") : false
   );
   const [loading, setLoading] = useState(true);
-  const [isLoggedin, setIsLoggedin] = useState(false);
+  const [isLoggedin, setIsLoggedin] = useState(!!localStorage.getItem("token"));
+
   const [userData, setUserData] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
@@ -164,8 +165,9 @@ const AppContextProvider = (props) => {
     localStorage.removeItem("expiresAt");
     setToken(null);
     setIsLoggedin(false);
+    console.log(isLoggedin);
     setUserData(false);
-    toast.info("You have been logged out due to session expiration.");
+    toast.info("You have been logged");
   };
 
   // Load user data
@@ -232,14 +234,22 @@ const AppContextProvider = (props) => {
     verification_status_user();
   }, [userData]);
 
+  useEffect(() => {
+    if (token) {
+      setIsLoggedin(true);
+    } else {
+      setIsLoggedin(false);
+    }
+  }, [token]);
+
   // Store token and expiration time on login
-  const setTokenAndExpiration = (newToken) => {
-    const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // Set expiration to 7 days
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("expiresAt", expiresAt);
-    setToken(newToken);
-    setIsLoggedin(true);
-  };
+  // const setTokenAndExpiration = (newToken) => {
+  //   const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // Set expiration to 7 days
+  //   localStorage.setItem("token", newToken);
+  //   localStorage.setItem("expiresAt", expiresAt);
+  //   setToken(newToken);
+  //   setIsLoggedin(true);
+  // };
 
   // Provide context values
   const value = {
@@ -253,7 +263,7 @@ const AppContextProvider = (props) => {
     userData,
     setUserData,
     token,
-    setToken: setTokenAndExpiration, // Use this function to set token and expiration
+    setToken, // Use this function to set token and expiration
     loadUserData,
     logoutUser,
   };

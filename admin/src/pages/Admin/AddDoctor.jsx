@@ -247,6 +247,7 @@ import { assets } from "../../assets/assets";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { motion } from "framer-motion";
 
 const AddDoctor = () => {
   const [docImg, setDocImg] = useState(false);
@@ -260,6 +261,7 @@ const AddDoctor = () => {
   const [address1, setAddress1] = useState("");
   const [address2, setAddress2] = useState("");
   const [about, setAbout] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const { backendurl, admintoken } = useContext(AdminContext);
 
@@ -269,6 +271,7 @@ const AddDoctor = () => {
       if (!docImg) {
         return toast.error("Image not selected");
       }
+      setLoading(true);
       const formData = new FormData();
       formData.append("image", docImg);
       formData.append("name", name);
@@ -308,12 +311,16 @@ const AddDoctor = () => {
     } catch (error) {
       toast.error(error.message);
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mx-4 my-6 max-w-4xl">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Add New Doctor</h1>
+    <form onSubmit={handleSubmit} className="  mx-4 my-6 max-w-4xl">
+      <div className="text-2xl font-bold text-gray-800 mb-6">
+        Add New Doctor
+      </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
         {/* Image Upload Section */}
@@ -531,12 +538,26 @@ const AddDoctor = () => {
         </div>
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+        <motion.div
+          className="bg-white rounded-xl shadow-md p-6 space-y-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          Add Doctor
-        </button>
+          {/* Submit Button with Animation */}
+          <motion.button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+            whileTap={{ scale: 0.95 }}
+            disabled={loading}
+          >
+            {loading ? (
+              <motion.div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></motion.div>
+            ) : (
+              "Add Doctor"
+            )}
+          </motion.button>
+        </motion.div>
       </div>
     </form>
   );

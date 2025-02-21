@@ -1454,8 +1454,10 @@ const Appointment = () => {
         </div> */}
 
         {/* Time Slot Selection */}
+        {/* Time Slot Selection */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-6">
-          {availableSlots[selectedDayIndex]?.length > 0 ? (
+          {selectedDayIndex !== -1 &&
+          availableSlots[selectedDayIndex]?.length > 0 ? (
             availableSlots[selectedDayIndex].map((slot, index) => (
               <button
                 key={index}
@@ -1469,6 +1471,14 @@ const Appointment = () => {
                 {slot.time.toLowerCase()}
               </button>
             ))
+          ) : selectedDayIndex === -1 ? (
+            <p className="text-gray-500 col-span-full text-center">
+              Please select a date to view available slots
+            </p>
+          ) : selectedDayIndex === 0 && todayMessage ? (
+            <p className="text-gray-500 col-span-full text-center">
+              {todayMessage}
+            </p>
           ) : (
             <p className="text-gray-500 col-span-full text-center">
               No available slots
