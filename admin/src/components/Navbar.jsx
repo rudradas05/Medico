@@ -47,15 +47,19 @@ import React, { useContext } from "react";
 import { assets } from "../assets/assets";
 import { AdminContext } from "../context/AdminContext";
 import { useNavigate } from "react-router-dom";
+import { DoctorContext } from "../context/DoctorContext";
 
 const Navbar = () => {
   const { admintoken, setAdmintoken } = useContext(AdminContext);
+  const { setDoctortoken } = useContext(DoctorContext);
   const navigate = useNavigate();
 
   const logout = () => {
     try {
-      setAdmintoken("");
-      localStorage.removeItem("admintoken");
+      setAdmintoken(""); // Clear admin token from context
+      setDoctortoken(""); // Clear doctor token from context
+      localStorage.removeItem("admintoken"); // Remove admin token from localStorage
+      localStorage.removeItem("doctortoken"); // Remove doctor token from localStorage
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);

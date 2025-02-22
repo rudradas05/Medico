@@ -4,12 +4,12 @@ import { toast } from "react-toastify";
 
 export const AdminContext = createContext();
 const AdminContextProvider = (props) => {
-  // const [admintoken, setAdmintoken] = useState(
-  //   localStorage.getItem("admintoken") ? localStorage.getItem("admintoken") : ""
-  // );
   const [admintoken, setAdmintoken] = useState(
-    localStorage.getItem("admintoken") || ""
+    localStorage.getItem("admintoken") ? localStorage.getItem("admintoken") : ""
   );
+  // const [admintoken, setAdmintoken] = useState(
+  //   localStorage.getItem("admintoken") || ""
+  // );
 
   const [doctors, setDoctors] = useState([]);
   const [appointments, setAppointments] = useState([]);

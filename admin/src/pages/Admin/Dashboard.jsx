@@ -308,6 +308,7 @@ import { AdminContext } from "../../context/AdminContext";
 import { assets } from "../../assets/assets";
 import { motion } from "framer-motion";
 import { FaUserMd, FaCalendarAlt, FaUsers } from "react-icons/fa";
+import { AppContext } from "../../context/AppContext";
 
 const Dashboard = () => {
   const {
@@ -318,6 +319,8 @@ const Dashboard = () => {
     cancelingId,
     getAllAppointments,
   } = useContext(AdminContext);
+
+  const { formatAppointmentDate } = useContext(AppContext);
 
   useEffect(() => {
     if (admintoken) {
@@ -387,7 +390,12 @@ const Dashboard = () => {
                     <p className="text-lg font-medium text-gray-900">
                       {item.docData.name}
                     </p>
-                    <p className="text-sm text-gray-500">{item.slotData}</p>
+                    <p className="text-sm text-gray-500">
+                      {formatAppointmentDate
+                        ? formatAppointmentDate(item.slotDate)
+                        : item.slotDate}
+                      , {item.slotTime}
+                    </p>
                   </div>
                   {item.cancelled ? (
                     <p className="text-red-500 font-semibold">Cancelled</p>
@@ -397,7 +405,11 @@ const Dashboard = () => {
                       onClick={() => cancelAppointment(item._id)}
                       disabled={cancelingId === item._id || item.cancelled}
                     >
-                      {cancelingId === item._id ? "Canceling..." : "Cancel"}
+                      {item.cancelled
+                        ? "Cancelled"
+                        : cancelingId === item._id
+                        ? "Canceling..."
+                        : "Cancel"}
                     </button>
                   )}
                 </motion.div>

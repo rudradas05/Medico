@@ -1,4 +1,6 @@
 import doctorModel from "../models/doctorModel.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 // const changeAvailability = async (req, res) => {
 //   try {
@@ -89,4 +91,79 @@ const allDoctorsList = async (req, res) => {
     console.error(error);
   }
 };
-export { changeAvailability, allDoctorsList };
+
+//api for doctor login
+
+// const loginDoctor = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     const doctor = await doctorModel.findOne({ email });
+//     if (!doctor) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Doctor not found" });
+//     }
+//     const isMatch = await bcrypt.compare(password, doctor.password);
+//     if (isMatch) {
+//       // Generate a JWT token
+//       const doctortoken = jwt.sign({ id: doctor._id }, process.env.SECRET_KEY, {
+//         expiresIn: "1h",
+//       });
+//       res.json({
+//         success: true,
+//         message: "Logged in successfully",
+//         doctortoken,
+//       });
+//     } else {
+//       return res
+//         .status(401)
+//         .json({ success: false, message: "Invalid password" });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//   }
+// };
+
+const loginDoctor = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and password are required" });
+    }
+
+    const doctor = await doctorModel.findOne({ email });
+    if (!doctor) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Doctor not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, doctor.password);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Incorrect password" });
+    }
+
+    // Generate JWT Token
+    const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.json({
+      success: true,
+      message: "Logged in successfully",
+      token,
+    });
+  } catch (error) {
+    console.error("Error logging in:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Login failed. Please try again." });
+  }
+};
+
+export { changeAvailability, allDoctorsList, loginDoctor };
