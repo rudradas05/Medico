@@ -134,7 +134,6 @@ const Login = () => {
           localStorage.setItem("doctortoken", data.token);
 
           setDoctortoken(data.token);
-          console.log(data.token);
           toast.success(data.message);
         } else {
           toast.error(data.message);

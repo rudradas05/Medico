@@ -63,7 +63,7 @@ const DoctorsList = () => {
   }, [admintoken]);
 
   return (
-    <div className="m-5 max-w-6xl mx-auto">
+    <div className="m-5 max-w-6xl mx-auto max-h-[80vh] overflow-y-scroll">
       {/* Title */}
       <h1 className="text-2xl font-bold text-gray-800 text-center">
         All Doctors
