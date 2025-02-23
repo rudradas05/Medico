@@ -1,5 +1,5 @@
 import axios from "axios";
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { data } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -14,6 +14,7 @@ const DoctorContextProvider = (props) => {
   const [appointments, setAppointments] = useState([]);
   const [dashData, setDashData] = useState(false);
   const [cancelingId, setCancelingId] = useState(null);
+  const [doctorData, setDoctorData] = useState(false);
 
   const getDoctorAppointments = async () => {
     try {
@@ -97,9 +98,32 @@ const DoctorContextProvider = (props) => {
     }
   };
 
+  const loadDoctorData = async () => {
+    try {
+      const { data } = await axios.get(
+        backendurl + "/api/doctor/get-doctor-data",
+        {
+          headers: {
+            doctortoken,
+          },
+        }
+      );
+      if (data.success) {
+        setDoctorData(data.doctorData);
+        console.log(data.doctorData);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message);
+    }
+  };
+
   const value = {
     doctortoken,
     setDoctortoken,
+    backendurl,
     appointments,
     setAppointments,
     getDoctorAppointments,
@@ -110,6 +134,9 @@ const DoctorContextProvider = (props) => {
     setDashData,
     cancelingId,
     setCancelingId,
+    loadDoctorData,
+    doctorData,
+    setDoctorData,
   };
   return (
     <DoctorContext.Provider value={value}>

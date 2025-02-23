@@ -687,7 +687,7 @@ const MyAppointments = () => {
 
                 {/* Buttons Section */}
                 {/* Buttons Section */}
-                <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
+                {/* <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
                   {appointment.cancelled ? (
                     <button className="w-full sm:w-full px-4 py-2 bg-gray-500 text-white rounded-md cursor-not-allowed">
                       Appointment Cancelled
@@ -701,6 +701,45 @@ const MyAppointments = () => {
                       ) : (
                         <button
                           className="w-full sm:w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                          onClick={() => appoinmentStripepay(appointment._id)}
+                          disabled={payingId === appointment._id}
+                        >
+                          {payingId === appointment._id
+                            ? "Processing"
+                            : "Pay Online"}
+                        </button>
+                      )}
+
+                      <button
+                        className="w-full sm:w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
+                        onClick={() => handleCancelAppointment(appointment._id)}
+                        disabled={cancelingId === appointment._id}
+                      >
+                        {cancelingId === appointment._id
+                          ? "Canceling..."
+                          : "Cancel Appointment"}
+                      </button>
+                    </>
+                  )}
+                </div> */}
+                <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
+                  {appointment.cancelled ? (
+                    <button className="w-full sm:w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed">
+                      Appointment Cancelled
+                    </button>
+                  ) : appointment.isCompleted ? (
+                    <button className="w-full sm:w-full px-4 py-2 bg-teal-600 text-white rounded-md cursor-not-allowed">
+                      Appointment Completed
+                    </button>
+                  ) : (
+                    <>
+                      {appointment.payment ? (
+                        <button className="w-full sm:w-full px-4 py-2 bg-green-700 text-white rounded-md">
+                          Paid
+                        </button>
+                      ) : (
+                        <button
+                          className="w-full sm:w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
                           onClick={() => appoinmentStripepay(appointment._id)}
                           disabled={payingId === appointment._id}
                         >

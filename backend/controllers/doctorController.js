@@ -286,6 +286,92 @@ const doctorDashboard = async (req, res) => {
   }
 };
 
+// api to get doctor profile
+
+// const doctorProfile = async (req, res) => {
+//   try {
+//     const { docId } = req.body;
+//     const profileData = await doctorModel.findById(docId).select("-password");
+//     res.json({ success: true, profileData });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+// const updateDoctorProfile = async (req, res) => {
+//   try {
+//     const { docId, fees, address, available, experience, about } = req.body;
+//     const imageFile = req.file;
+//     await doctorModel.findByIdAndUpdate(docId, {
+//       ...about(fees && { fees }),
+//       ...address(address && { address }),
+//       ...(available && { available }),
+//       ...(experience && { experience }),
+//     });
+//     if (imageFile) {
+//       const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
+//         resource_type: "image",
+//       });
+//       const imageUrl = imageUpload.secure_url;
+//       await doctorModel.findByIdAndUpdate(docId, { image: imageUrl });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+const getDoctorData = async (req, res) => {
+  try {
+    const { docId } = req.body;
+    if (!docId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Doctor ID is required" });
+    }
+
+    const doctorData = await doctorModel.findById(docId).select("-password");
+
+    if (!doctorData) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Doctor not found" });
+    }
+
+    res.json({ success: true, doctorData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+const updateDoctorProfile = async (req, res) => {
+  try {
+    const { docId, fees, address, available, about } = req.body;
+    if (!docId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Doctor ID is required" });
+    }
+
+    // Update doctor profile fields
+
+    await doctorModel.findByIdAndUpdate(docId, {
+      fees,
+      address,
+      available,
+
+      about,
+    });
+
+    res.json({ success: true, message: "Profile updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 export {
   changeAvailability,
   allDoctorsList,
@@ -294,4 +380,6 @@ export {
   appointmentComplete,
   appointmentCancel,
   doctorDashboard,
+  getDoctorData,
+  updateDoctorProfile,
 };
