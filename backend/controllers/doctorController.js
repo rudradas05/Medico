@@ -150,9 +150,7 @@ const loginDoctor = async (req, res) => {
     }
 
     // Generate JWT Token
-    const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign({ id: doctor._id }, process.env.JWT_SECRET);
 
     res.json({
       success: true,
@@ -180,4 +178,120 @@ const doctorAppointments = async (req, res) => {
   }
 };
 
-export { changeAvailability, allDoctorsList, loginDoctor, doctorAppointments };
+const appointmentComplete = async (req, res) => {
+  try {
+    const { docId, appointmentId } = req.body;
+    const appointmentData = await appointmentModel.findByIdAndUpdate(
+      appointmentId
+    );
+    if (appointmentData && appointmentData.docId === docId) {
+      await appointmentModel.findByIdAndUpdate(appointmentId, {
+        isCompleted: true,
+      });
+      res.json({ success: true, message: "Appointment completed" });
+    } else {
+      res.json({ success: false, message: "Invalid appointment" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+const appointmentCancel = async (req, res) => {
+  try {
+    const { docId, appointmentId } = req.body;
+    const appointmentData = await appointmentModel.findById(appointmentId);
+    if (appointmentData && appointmentData.docId === docId) {
+      await appointmentModel.findByIdAndUpdate(appointmentId, {
+        cancelled: true,
+      });
+
+      const { docId, slotDate, slotTime } = appointmentData;
+      const doctorData = await doctorModel.findById(docId);
+
+      if (doctorData && doctorData.slots_booked[slotDate]) {
+        doctorData.slots_booked[slotDate] = doctorData.slots_booked[
+          slotDate
+        ].filter((e) => e !== slotTime);
+        await doctorModel.findByIdAndUpdate(docId, {
+          slots_booked: doctorData.slots_booked,
+        });
+      }
+
+      res.json({ success: true, message: "Appointment cancelled" });
+    } else {
+      res.json({ success: false, message: "Invalid appointment" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// const doctorDashboard = async (req, res) => {
+//   try {
+//     const { docId } = req.body;
+//     const appointments = await appointmentModel.find({ docId });
+//     let totalEarnings = 0;
+//     appointments.map((item) => {
+//       if (item.isCompleted || item.payment) {
+//         totalEarnings += item.amount;
+//       }
+//     });
+//     let patients = [];
+//     appointments.map((item) => {
+//       if (!patients.includes(item.userId)) {
+//         patients.push(item.userId);
+//       }
+//     });
+//     const dashData = {
+//       totalEarnings,
+//       appointments: appointments.length,
+//       patients: patients.length,
+//       latestAppointmenst: appointments.reverse().slice(0, 5),
+//     };
+//     res.json({ success: true, dashData });
+//   } catch (error) {
+//     console.log(error);
+//     res.json({ success: false, message: error.message });
+//   }
+// };
+const doctorDashboard = async (req, res) => {
+  try {
+    const { docId } = req.body;
+    const appointments = await appointmentModel.find({ docId });
+
+    let totalEarnings = 0;
+    const patients = new Set();
+
+    appointments.forEach((item) => {
+      if (item.isCompleted || item.payment) {
+        totalEarnings += item.amount;
+      }
+      patients.add(item.userId);
+    });
+
+    const dashData = {
+      totalEarnings,
+      appointments: appointments.length,
+      patients: patients.size,
+      latestAppointments: [...appointments].reverse().slice(0, 5),
+    };
+
+    res.json({ success: true, dashData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export {
+  changeAvailability,
+  allDoctorsList,
+  loginDoctor,
+  doctorAppointments,
+  appointmentComplete,
+  appointmentCancel,
+  doctorDashboard,
+};
