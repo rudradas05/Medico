@@ -204,7 +204,7 @@ const Header = () => {
         >
           {assets.header_img ? (
             <motion.img
-              className="w-full h-auto rounded-lg shadow-lg object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+              className="w-full h-auto rounded-lg  object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
               src={assets.header_img}
               alt="Healthcare Illustration"
               onError={(e) => (e.target.style.display = "none")}
