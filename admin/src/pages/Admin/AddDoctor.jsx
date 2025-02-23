@@ -248,6 +248,7 @@ import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { motion } from "framer-motion";
+import { AppContext } from "../../context/AppContext";
 
 const AddDoctor = () => {
   const [docImg, setDocImg] = useState(false);
@@ -264,6 +265,7 @@ const AddDoctor = () => {
   const [loading, setLoading] = useState(false);
 
   const { backendurl, admintoken } = useContext(AdminContext);
+  const { currencySymbol } = useContext(AppContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -430,11 +432,11 @@ const AddDoctor = () => {
               >
                 {[
                   "General Physician",
-                  "Gynocologist",
+                  "Gynecologist",
                   "Dermatologist",
                   "Pediatricians",
                   "Neurologist",
-                  "Gastroentologist",
+                  "Gastroenterologist",
                 ].map((specialty, index) => (
                   <option key={index} value={specialty}>
                     {specialty}
@@ -466,7 +468,7 @@ const AddDoctor = () => {
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  $
+                  {currencySymbol}
                 </span>
                 <input
                   type="number"
