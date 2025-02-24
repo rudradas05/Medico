@@ -572,7 +572,7 @@ const ResetPassword = () => {
 
           <div className="mb-8">
             <div
-              className="flex justify-between gap-3 mb-4"
+              className="flex justify-between gap-2 sm:gap-4 mb-3"
               onPaste={handlePaste}
             >
               {Array(6)
@@ -582,7 +582,7 @@ const ResetPassword = () => {
                     type="text"
                     maxLength="1"
                     key={index}
-                    className="w-14 h-14 bg-slate-700 text-white text-center text-2xl rounded-lg
+                    className="w-10 h-10 sm:w-14 sm:h-14 bg-slate-700 text-white text-center text-2xl rounded-lg
                              focus:ring-2 focus:ring-indigo-500 focus:bg-slate-600 outline-none
                              transition-all duration-150 font-mono"
                     ref={(e) => (inputRefs.current[index] = e)}

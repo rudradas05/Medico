@@ -167,7 +167,7 @@ const AppContextProvider = (props) => {
     setIsLoggedin(false);
     console.log(isLoggedin);
     setUserData(false);
-    toast.info("You have been logged");
+    toast.info("You have been logged out");
   };
 
   // Load user data
