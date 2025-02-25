@@ -552,8 +552,7 @@ const MyAppointments = () => {
       });
       if (data.success && Array.isArray(data.appointment)) {
         const sortedAppointments = data.appointment.sort(
-          (a, b) => new Date(b.slotDate) - new Date(a.slotDate) // Descending (Newest First)
-          // Change to `new Date(a.slotDate) - new Date(b.slotDate)` for Ascending (Oldest First)
+          (a, b) => new Date(b.slotDate) - new Date(a.slotDate)
         );
         setAppointments(sortedAppointments);
       } else {
@@ -579,6 +578,11 @@ const MyAppointments = () => {
       setIsLoading(false);
     }
   }, [backendurl, token]);
+
+  const isExpired = (slotDate, slotTime) => {
+    const appointmentDateTime = new Date(`${slotDate} ${slotTime}`);
+    return appointmentDateTime < new Date();
+  };
 
   const handleCancelAppointment = async (appointmentId) => {
     setCancelingId(appointmentId);
@@ -722,6 +726,46 @@ const MyAppointments = () => {
                     </>
                   )}
                 </div> */}
+                {/* <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
+                  {appointment.cancelled ? (
+                    <button className="w-full sm:w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed">
+                      Appointment Cancelled
+                    </button>
+                  ) : appointment.isCompleted ? (
+                    <button className="w-full sm:w-full px-4 py-2 bg-teal-600 text-white rounded-md cursor-not-allowed">
+                      Appointment Completed
+                    </button>
+                  ) : (
+                    <>
+                      {appointment.payment ? (
+                        <button className="w-full sm:w-full px-4 py-2 bg-green-700 text-white rounded-md">
+                          Paid
+                        </button>
+                      ) : (
+                        <button
+                          className="w-full sm:w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                          onClick={() => appoinmentStripepay(appointment._id)}
+                          disabled={payingId === appointment._id}
+                        >
+                          {payingId === appointment._id
+                            ? "Processing"
+                            : "Pay Online"}
+                        </button>
+                      )}
+
+                      <button
+                        className="w-full sm:w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
+                        onClick={() => handleCancelAppointment(appointment._id)}
+                        disabled={cancelingId === appointment._id}
+                      >
+                        {cancelingId === appointment._id
+                          ? "Canceling..."
+                          : "Cancel Appointment"}
+                      </button>
+                    </>
+                  )}
+                </div> */}
+
                 <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
                   {appointment.cancelled ? (
                     <button className="w-full sm:w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed">
@@ -730,6 +774,10 @@ const MyAppointments = () => {
                   ) : appointment.isCompleted ? (
                     <button className="w-full sm:w-full px-4 py-2 bg-teal-600 text-white rounded-md cursor-not-allowed">
                       Appointment Completed
+                    </button>
+                  ) : isExpired(appointment.slotDate, appointment.slotTime) ? (
+                    <button className="w-full sm:w-full px-4 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed">
+                      Appointment Expired
                     </button>
                   ) : (
                     <>
