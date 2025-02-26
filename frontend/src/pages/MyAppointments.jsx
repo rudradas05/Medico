@@ -37,7 +37,6 @@ const MyAppointments = () => {
         months[date.getMonth()]
       } ${date.getFullYear()}`;
     } catch (error) {
-      console.error("Date formatting error:", error);
       return "Invalid date";
     }
   };
@@ -58,7 +57,7 @@ const MyAppointments = () => {
         setAppointments([]);
       }
     } catch (error) {
-      console.error(
+      toast.error(
         "Appointment fetch error:",
         error.response?.status,
         error.message
@@ -101,7 +100,6 @@ const MyAppointments = () => {
         getDoctorsData();
       }
     } catch (error) {
-      console.error("Cancel error:", error.response?.status, error.message);
       toast.error(
         `Cancel failed: ${
           error.response?.data?.message || "Failed to cancel appointment."
@@ -124,7 +122,6 @@ const MyAppointments = () => {
       const stripe = await stripePromise;
       await stripe.redirectToCheckout({ sessionId: data.sessionId });
     } catch (error) {
-      console.error("Checkout error:", error);
       toast.error("Failed to initiate payment. Please try again.");
     } finally {
       setPayingId(null);

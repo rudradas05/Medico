@@ -47,7 +47,6 @@ const Login = () => {
         localStorage.setItem("expiresAt", expiresAt);
         setToken(data.token);
         setIsLoggedin(true);
-        console.log(isLoggedin);
 
         navigate(mode === "signup" ? "/email-verify" : "/");
         toast.success(

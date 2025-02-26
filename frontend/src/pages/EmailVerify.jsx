@@ -62,7 +62,6 @@ const EmailVerify = () => {
         toast.error(data.message, toastConfig);
       }
     } catch (error) {
-      console.error("Error:", error.response?.data || error.message);
       toast.error(error.message || "Something went wrong", toastConfig);
     }
   };
@@ -94,7 +93,6 @@ const EmailVerify = () => {
         toast.error(data.message, toastConfig);
       }
     } catch (error) {
-      console.error("Error:", error.response?.data || error.message);
       toast.error(error.message || "Verification failed", toastConfig);
     }
   };

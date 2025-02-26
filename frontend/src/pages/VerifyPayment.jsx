@@ -37,7 +37,6 @@ const VerifyPayment = () => {
           navigate("/");
         }
       } catch (error) {
-        console.error("Payment verification error:", error);
         toast.error("Payment verification failed. Please contact support.");
         navigate("/");
       } finally {

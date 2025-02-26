@@ -21,7 +21,6 @@ const AppContextProvider = (props) => {
     const expiresAt = localStorage.getItem("expiresAt");
 
     if (!expiresAt || Date.now() > parseInt(expiresAt, 10)) {
-      console.log("Token expired! Logging out...");
       logoutUser();
     }
   };
@@ -31,7 +30,7 @@ const AppContextProvider = (props) => {
     localStorage.removeItem("expiresAt");
     setToken(null);
     setIsLoggedin(false);
-    console.log(isLoggedin);
+
     setUserData(false);
     toast.info("You have been logged out");
   };
@@ -49,7 +48,6 @@ const AppContextProvider = (props) => {
         toast.error(data.message);
       }
     } catch (error) {
-      console.error(error);
       toast.error(error.message);
     }
   };
@@ -64,7 +62,6 @@ const AppContextProvider = (props) => {
         toast.error(error.message);
       }
     } catch (error) {
-      console.error(error);
       toast.error(error.message);
     } finally {
       setLoading(false);
