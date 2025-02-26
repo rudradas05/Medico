@@ -24,7 +24,6 @@ const addDoctor = async (req, res) => {
 
     const imageFile = req.file;
 
-    // checking for all data to add doctors
     if (
       !name ||
       !email ||
@@ -41,14 +40,12 @@ const addDoctor = async (req, res) => {
         .json({ success: false, message: "Please fill all the fields" });
     }
 
-    // validating email
     if (!validator.isEmail(email)) {
       return res
         .status(400)
         .json({ success: false, message: "Please enter a valid email" });
     }
 
-    //validating password
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -56,11 +53,9 @@ const addDoctor = async (req, res) => {
       });
     }
 
-    // hashing password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // upload image to cloudinary
     const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
       resource_type: "image",
     });
@@ -139,50 +134,6 @@ const appointmentsAdmin = async (req, res) => {
   }
 };
 
-// to cancel appointment
-// const appointmentCancel = async (req, res) => {
-//   try {
-//     const { appointmentId } = req.body;
-
-//     const appointmentData = await appointmentModel.findById(appointmentId);
-//     if (!appointmentData) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Appointment not found" });
-//     }
-
-//     await appointmentModel.findByIdAndUpdate(appointmentId, {
-//       cancelled: true,
-//     });
-
-//     // Releasing doctor slot
-//     const { docId, slotDate, slotTime } = appointmentData;
-//     const doctorData = await doctorModel.findById(docId);
-//     if (!doctorData) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Doctor not found" });
-//     }
-
-//     let slots_booked = doctorData.slots_booked;
-//     if (slots_booked[slotDate]) {
-//       slots_booked[slotDate] = slots_booked[slotDate].filter(
-//         (e) => e !== slotTime
-//       );
-//     }
-//     await doctorModel.findByIdAndUpdate(docId, { slots_booked });
-
-//     res.json({
-//       success: true,
-//       message: "Appointment cancelled successfully",
-//       appointmentData,
-//     });
-//   } catch (error) {
-//     console.error("Error cancelling appointment:", error);
-//     res.status(500).json({ success: false, message: "Internal Server Error" });
-//   }
-// };
-
 const appointmentCancel = async (req, res) => {
   try {
     const { appointmentId } = req.body;
@@ -201,7 +152,6 @@ const appointmentCancel = async (req, res) => {
         .json({ success: false, message: "Appointment not found" });
     }
 
-    // Mark appointment as cancelled
     await appointmentModel.findByIdAndUpdate(appointmentId, {
       cancelled: true,
     });
@@ -225,8 +175,6 @@ const appointmentCancel = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
-
-// api to get dashboard data
 
 const adminDashboard = async (req, res) => {
   try {

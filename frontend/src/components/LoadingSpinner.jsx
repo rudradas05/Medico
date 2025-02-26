@@ -1,6 +1,5 @@
 import React from "react";
 
-// components/LoadingSpinner.jsx
 const LoadingSpinner = ({ className = "" }) => {
   return (
     <div className={`flex justify-center items-center ${className}`}>

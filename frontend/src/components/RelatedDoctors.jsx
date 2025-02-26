@@ -100,12 +100,6 @@ const RelatedDoctors = ({ speciality, docId }) => {
               scrollTo(0, 0);
             }}
             className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
-            // role="button"
-            // tabIndex={0}
-            // onKeyDown={(e) => {
-            //   e.key === "Enter" && navigate(`/appointment/${item._id}`);
-            //   scrollTo(0, 0);
-            // }}
           >
             <div className="relative h-48 bg-gray-100">
               <img

@@ -23,9 +23,9 @@ const VerifyPayment = () => {
       try {
         const { data } = await axios.post(
           `${backendurl}/api/user/verify-payment?session_id=${sessionId}`,
-          {}, // Empty payload
+          {},
           {
-            headers: { token }, // Use Bearer token format
+            headers: { token },
           }
         );
 

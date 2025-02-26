@@ -8,8 +8,6 @@ import doctorModel from "../models/doctorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import Stripe from "stripe";
 
-// api to register user
-
 const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -19,7 +17,6 @@ const registerUser = async (req, res) => {
         .json({ success: false, message: "All fields are required" });
     }
 
-    //validating email
     if (!validator.isEmail(email)) {
       return res
         .status(400)
@@ -33,7 +30,6 @@ const registerUser = async (req, res) => {
         .json({ success: false, message: "Email already exists" });
     }
 
-    // checking password
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -41,7 +37,6 @@ const registerUser = async (req, res) => {
       });
     }
 
-    // hashinvg password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -53,8 +48,6 @@ const registerUser = async (req, res) => {
     const newUser = new userModel(userData);
     const user = await newUser.save();
 
-    // generate token
-
     const expiresIn = 7 * 24 * 60 * 60 * 1000;
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
@@ -65,7 +58,7 @@ const registerUser = async (req, res) => {
       token,
       expiresAt: Date.now() + expiresIn,
     });
-    // sending welcome email
+
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
@@ -90,37 +83,31 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input fields
     if (!email || !password) {
       return res
         .status(400)
         .json({ success: false, message: "All fields are required" });
     }
 
-    // Validate email format
     if (!validator.isEmail(email)) {
       return res
         .status(400)
         .json({ success: false, message: "Enter a valid email" });
     }
 
-    // Find user by email
     const user = await userModel.findOne({ email });
     if (!user) {
       return res
-        .status(404) // User not found should ideally be 404
+        .status(404)
         .json({ success: false, message: "User not found" });
     }
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res
-        .status(401) // Unauthorized
+        .status(401)
         .json({ success: false, message: "Incorrect password" });
     }
-
-    // Generate JWT token
 
     const expiresIn = 7 * 24 * 60 * 60 * 1000;
 
@@ -131,76 +118,17 @@ const loginUser = async (req, res) => {
     return res.status(200).json({
       success: true,
       token,
-      expiresAt: Date.now() + expiresIn, // Send expiry timestamp
+      expiresAt: Date.now() + expiresIn,
     });
   } catch (error) {
     console.error("Error logging in user:", error);
 
-    // Return a generic message to avoid exposing sensitive details
     return res.status(500).json({
       success: false,
       message: "An error occurred while logging in. Please try again later.",
     });
   }
 };
-
-// login user
-
-// const loginUser = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-//     if (!email || !password) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "All fields are required" });
-//     }
-//     //validating email
-//     if (!validator.isEmail(email)) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Enter a valid email" });
-//     }
-
-//     const user = await userModel.findOne({ email });
-//     if (!user) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "User not found" });
-//     }
-//     // checking password
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Incorrect password" });
-//     }
-
-//     // generate token
-//     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-//       expiresIn: "7d",
-//     });
-
-//     res.json({ success: true, token });
-//   } catch (error) {
-//     console.error(error);
-//     res.json({ success: false, message: error.message });
-//   }
-// };
-
-// const logoutUser = async (req, res) => {
-//   try {
-//     res.clearCookie("token", {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === "production",
-//       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-//     });
-
-//     return res.json({ success: true, message: "Logged out successfully" });
-//   } catch (error) {
-//     console.error(error);
-//     res.json({ success: false, message: error.message });
-//   }
-// };
 
 const sendVerifyOtp = async (req, res) => {
   try {
@@ -240,38 +168,6 @@ const sendVerifyOtp = async (req, res) => {
   }
 };
 
-// const verifyEmail = async (req, res) => {
-//   const { userId } = req.body;
-//   if (!userId || !otp) {
-//     return res.status(400).json({ success: false, message: "Invalid request" });
-//   }
-//   try {
-//     const user = await userModel.findById(userId);
-//     if (!user) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "User not found" });
-//     }
-//     if (user.verifyotp === "" || user.verifyotp !== otp) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Invalid verification code" });
-//     }
-//     if (user.verifyotpExpireAt < Date.now()) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Verification code expired" });
-//     }
-//     user.isAccoutverified = true;
-//     user.verifyotp = "";
-//     user.verifyotpExpireAt = 0;
-//     await user.save();
-//     res.json({ success: true, message: "Email verified successfully" });
-//   } catch (error) {
-//     console.error(error);
-//     res.json({ success: false, message: error.message });
-//   }
-// };
 const verifyEmail = async (req, res) => {
   try {
     const { userId, otp } = req.body;
@@ -345,7 +241,7 @@ const sendResetOtp = async (req, res) => {
     }
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     user.resetotp = otp;
-    user.resetOtpExpireAt = Date.now() + 300000; // 5 minutes
+    user.resetOtpExpireAt = Date.now() + 300000;
     await user.save();
 
     const mailOptions = {
@@ -481,123 +377,16 @@ const updateUserData = async (req, res) => {
   }
 };
 
-// booking apppintment
-// const bookAppointment = async (req, res) => {
-//   try {
-//     const { userId, docId, slotDate, slotTime } = req.body;
-
-//     const docData = await doctorModel.findById(docId).select("-password");
-//     if (!docData.available) {
-//       return res.json({ success: false, message: "Doctor is not available" });
-//     }
-//     let slots_booked = docData.slots_booked;
-
-//     // checking for available slots
-//     if (slots_booked[slotDate]) {
-//       if (slots_booked[slotDate].includes(slotTime)) {
-//         return res.json({ success: false, message: "Slot is already booked" });
-//       } else {
-//         slots_booked[slotDate].push(slotTime);
-//       }
-//     } else {
-//       slots_booked[slotDate] = [];
-//       slots_booked[slotDate].push(slotTime);
-//     }
-
-//     const userData = await userModel.findById(userId).select("-password");
-//     delete docData.slots_booked;
-
-//     const appointmentData = {
-//       userId: userId,
-//       docId: docId,
-//       userData: userData,
-//       docData: docData,
-//       amount: docData.fees,
-//       slotDate: slotDate,
-//       slotTime: slotTime,
-//       data: Date.now(),
-//     };
-
-//     const newAppointment = new appointmentModel(appointmentData);
-//   } catch (error) {
-//     console.error(error);
-//     res.json({ success: false, message: error.message });
-//   }
-// };
-
-// const bookAppointment = async (req, res) => {
-//   try {
-//     const { userId, docId, slotDate, slotTime } = req.body;
-
-//     // Find doctor and validate availability
-//     const docData = await doctorModel.findById(docId).select("-password");
-//     if (!docData || !docData.available) {
-//       return res.json({ success: false, message: "Doctor is not available" });
-//     }
-
-//     let slots_booked = docData.slots_booked || {};
-
-//     // Check for available slots
-//     if (slots_booked[slotDate]) {
-//       if (slots_booked[slotDate].includes(slotTime)) {
-//         return res.json({ success: false, message: "Slot is already booked" });
-//       } else {
-//         slots_booked[slotDate].push(slotTime);
-//       }
-//     } else {
-//       slots_booked[slotDate] = [slotTime];
-//     }
-
-//     // Update doctor's slots in the database
-//     await doctorModel.findByIdAndUpdate(docId, { slots_booked });
-
-//     // Get user data
-//     const userData = await userModel.findById(userId).select("-password");
-//     if (!userData) {
-//       return res.json({ success: false, message: "User not found" });
-//     }
-
-//     // Prepare appointment data
-//     const appointmentData = {
-//       userId,
-//       docId,
-//       userData,
-//       docData,
-//       amount: docData.fees,
-//       slotDate,
-//       slotTime,
-//       date: Date.now(),
-//     };
-
-//     // Save appointment
-//     const newAppointment = new appointmentModel(appointmentData);
-//     await newAppointment.save();
-
-//     await doctorModel.findByIdAndUpdate(docId, { slots_booked });
-
-//     res.json({
-//       success: true,
-//       message: "Appointment booked successfully",
-//       appointment: newAppointment,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
 const bookAppointment = async (req, res) => {
   try {
     const { userId, docId, slotDate, slotTime } = req.body;
 
-    // Validate input
     if (!userId || !docId || !slotDate || !slotTime) {
       return res
         .status(400)
         .json({ success: false, message: "Missing required fields" });
     }
 
-    // Find doctor and validate availability
     const docData = await doctorModel.findById(docId).lean();
     if (!docData) {
       return res
@@ -612,18 +401,16 @@ const bookAppointment = async (req, res) => {
 
     let slots_booked = docData.slots_booked || {};
 
-    // Check if the slot is already booked
     if (slots_booked[slotDate]?.includes(slotTime)) {
       return res.json({ success: false, message: "Slot is already booked" });
     }
 
-    // Update slots_booked for the doctor
     slots_booked[slotDate] = [...(slots_booked[slotDate] || []), slotTime];
 
     const updatedDoctor = await doctorModel.findByIdAndUpdate(
       docId,
       { slots_booked },
-      { new: true } // Return updated document
+      { new: true }
     );
 
     if (!updatedDoctor) {
@@ -632,7 +419,6 @@ const bookAppointment = async (req, res) => {
         .json({ success: false, message: "Failed to update doctor's slots" });
     }
 
-    // Get user data
     const userData = await userModel
       .findById(userId)
       .select("-password")
@@ -643,7 +429,6 @@ const bookAppointment = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Prepare and save the appointment
     const newAppointment = new appointmentModel({
       userId,
       docId,
@@ -680,39 +465,6 @@ const appointmentsList = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
-
-// const cancelAppointment = async (req, res) => {
-//   try {
-//     const { userId, appointmentId } = req.body;
-//     const appointmentData = await appointmentModel.findOneAndDelete({
-//       appointmentId,
-//     });
-//     if (appointmentData.userId !== userId) {
-//       return res.json({ success: false, message: "Unauthorized action" });
-//     }
-
-//     await appointmentModel.findByIdAndUpdate(appointmentId, {
-//       cancelled: true,
-//     });
-//     // releasing doctor slot
-//     const { docId, slotData, slotTime } = appointmentData;
-//     const doctorData = await doctorModel.findById(docId);
-
-//     let slots_booked = doctorData.slots_booked;
-//     slots_booked[slotData] = slots_booked[slotData].filter(
-//       (e) => e !== slotTime
-//     );
-//     await doctorModel.findByIdAndUpdate(docId, { slots_booked });
-
-//     res.json(
-//       { success: true, message: "Appointment cancelled successfully" },
-//       appointmentData
-//     );
-//   } catch (error) {
-//     console.error(error);
-//     res.json({ success: false, message: error.message });
-//   }
-// };
 
 const cancelAppointment = async (req, res) => {
   try {
@@ -768,50 +520,6 @@ const cancelAppointment = async (req, res) => {
   }
 };
 
-// stripe payment
-
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// const createCheckoutSession = async (req, res) => {
-//   try {
-//     const { appointmentId } = req.body;
-
-//     // Fetch appointment details
-//     const appointmentData = await appointmentModel.findById(appointmentId);
-//     if (!appointmentData || appointmentData.cancelled) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: "Appointment not found" });
-//     }
-
-//     // Create Stripe Checkout Session
-//     const session = await stripe.checkout.sessions.create({
-//       payment_method_types: ["card"],
-//       mode: "payment",
-//       success_url: `${process.env.FRONTEND_URL}/verify?success=true&session_id={CHECKOUT_SESSION_ID}`,
-//       cancel_url: `${process.env.FRONTEND_URL}/verify?success=false&session_id={CHECKOUT_SESSION_ID}`,
-//       line_items: [
-//         {
-//           price_data: {
-//             currency: process.env.CURRENCY || "INR",
-//             product_data: {
-//               name: "Doctor Consultation Fee",
-//             },
-//             unit_amount: appointmentData.amount * 100, // Convert to cents
-//           },
-//           quantity: 1,
-//         },
-//       ],
-//       metadata: { appointmentId: appointmentId },
-//     });
-
-//     res.json({ success: true, sessionId: session.id });
-//   } catch (error) {
-//     console.error("Error creating checkout session:", error);
-//     res.status(500).json({ success: false, message: "Internal Server Error" });
-//   }
-// };
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const createCheckoutSession = async (req, res) => {
@@ -825,7 +533,6 @@ const createCheckoutSession = async (req, res) => {
         .json({ success: false, message: "Appointment not found" });
     }
 
-    // Ensure the amount is a valid number
     const amount = Math.round(Number(appointmentData.amount) * 100);
     if (!amount || amount <= 0) {
       return res
@@ -833,7 +540,6 @@ const createCheckoutSession = async (req, res) => {
         .json({ success: false, message: "Invalid appointment amount" });
     }
 
-    // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -844,7 +550,7 @@ const createCheckoutSession = async (req, res) => {
           price_data: {
             currency: process.env.CURRENCY || "INR",
             product_data: { name: "Doctor Consultation Fee" },
-            unit_amount: amount, // Corrected
+            unit_amount: amount,
           },
           quantity: 1,
         },
@@ -868,7 +574,6 @@ const verifyPayment = async (req, res) => {
         .json({ success: false, message: "Session ID is missing" });
     }
 
-    // Retrieve Stripe Checkout Session
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
     if (!session || session.payment_status !== "paid") {
@@ -884,7 +589,6 @@ const verifyPayment = async (req, res) => {
         .json({ success: false, message: "Invalid session metadata" });
     }
 
-    // Mark the appointment as paid
     await appointmentModel.findByIdAndUpdate(appointmentId, { payment: true });
 
     res.json({ success: true, message: "Payment verified successfully" });
@@ -909,10 +613,3 @@ export {
   createCheckoutSession,
   verifyPayment,
 };
-
-// res.cookie("token", token, {
-//   httpOnly: true,
-//   secure: process.env.NODE_ENV === "production",
-//   sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-//   maxAge: 7 * 24 * 60 * 60 * 1000,
-// });
