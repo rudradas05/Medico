@@ -7,7 +7,8 @@ const servicesData = [
     shortDescription: "Get your lab test results conveniently.",
     description:
       "Our lab report service provides detailed and accurate results for all your medical tests. You can access these reports directly through our platform.",
-    image: "/images/lab-report.jpg",
+    image:
+      "https://th.bing.com/th/id/OIP.VugIWHCrB3EeedVpUWhiFAHaE8?pid=ImgDet&w=193&h=128&c=7&dpr=2",
   },
   {
     id: 2,
@@ -15,7 +16,8 @@ const servicesData = [
     shortDescription: "Get expert prescriptions from qualified doctors.",
     description:
       "Consult with top-rated doctors to receive accurate prescriptions tailored to your health needs.",
-    image: "/images/doctor-prescription.jpg",
+    image:
+      "https://th.bing.com/th/id/OIP.GwvoDxUSbJIsmv3ZC8GL3wHaE7?w=264&h=180&c=7&r=0&o=5&dpr=2&pid=1.7",
   },
   {
     id: 3,
@@ -23,7 +25,8 @@ const servicesData = [
     shortDescription: "Consult with doctors online anytime, anywhere.",
     description:
       "Enjoy the convenience of online consultations with experienced doctors through video calls or chat.",
-    image: "/images/online-consultation.jpg",
+    image:
+      "https://th.bing.com/th/id/OIP.jle8tqJMHY4SM9hvdh0ztgHaFj?pid=ImgDet&w=193&h=144&c=7&dpr=2",
   },
   {
     id: 4,
@@ -31,7 +34,8 @@ const servicesData = [
     shortDescription: "Get medicines delivered to your doorstep.",
     description:
       "Order medicines through our platform and have them delivered to your home in a timely manner.",
-    image: "/images/medicine-delivery.jpg",
+    image:
+      "https://th.bing.com/th/id/OIP.AwPL799-F1L4gp_U2geCBwHaEK?rs=1&pid=ImgDetMain",
   },
   {
     id: 5,
@@ -39,7 +43,8 @@ const servicesData = [
     shortDescription: "Comprehensive health checkups at affordable prices.",
     description:
       "Choose from various health checkup packages to ensure your overall well-being.",
-    image: "/images/health-checkup.jpg",
+    image:
+      "https://th.bing.com/th/id/OIP.fDeii030j6u7ipnQCjQ9uQHaE8?w=246&h=180&c=7&r=0&o=5&dpr=2&pid=1.7",
   },
 ];
 

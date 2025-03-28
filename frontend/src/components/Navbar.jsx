@@ -41,7 +41,8 @@ const Navbar = () => {
             navigate("/");
             scrollTo(0, 0);
           }}
-          className="w-30 cursor-pointer hover:opacity-80 transition-opacity"
+          className="h-10 cursor-pointer hover:opacity-80 transition-opacity"
+          src={assets.logo}
           alt="logo"
         />
 
