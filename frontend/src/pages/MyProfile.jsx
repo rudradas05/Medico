@@ -329,7 +329,7 @@ const InfoRow = ({ label, value, isEmail, icon }) => (
         </a>
       ) : (
         <span className="text-gray-700 text-sm font-medium">
-          {value || "-"}
+          {value || "XXX@gmail.com"}
         </span>
       )}
     </div>
@@ -357,6 +357,27 @@ const EditableInfo = ({ label, value, isEdit, onChange, icon }) => (
   </div>
 );
 
+// const EditableSelect = ({ label, value, options, isEdit, onChange }) => (
+//   <div className="flex justify-between items-center">
+//     <span className="text-sm font-medium text-gray-600">{label}:</span>
+//     {isEdit ? (
+//       <select
+//         value={value}
+//         onChange={(e) => onChange(e.target.value)}
+//         className="w-48 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+//       >
+//         {options.map((option) => (
+//           <option key={option} value={option}>
+//             {option}
+//           </option>
+//         ))}
+//       </select>
+//     ) : (
+//       <span className="text-gray-700 text-sm">{value || "-"}</span>
+//     )}
+//   </div>
+// );
+
 const EditableSelect = ({ label, value, options, isEdit, onChange }) => (
   <div className="flex justify-between items-center">
     <span className="text-sm font-medium text-gray-600">{label}:</span>
@@ -366,6 +387,9 @@ const EditableSelect = ({ label, value, options, isEdit, onChange }) => (
         onChange={(e) => onChange(e.target.value)}
         className="w-48 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
       >
+        <option value="" disabled>
+          Not Selected
+        </option>
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
@@ -373,7 +397,7 @@ const EditableSelect = ({ label, value, options, isEdit, onChange }) => (
         ))}
       </select>
     ) : (
-      <span className="text-gray-700 text-sm">{value || "-"}</span>
+      <span className="text-gray-700 text-sm">{value || "Not Selected"}</span>
     )}
   </div>
 );
@@ -413,6 +437,9 @@ const AllergiesInput = ({ userData, setUserData, isEdit }) => (
           }}
           className="px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         >
+          <option value="" disabled>
+            Not Selected
+          </option>
           <option value="No">No</option>
           <option value="Yes">Yes</option>
         </select>
@@ -432,7 +459,9 @@ const AllergiesInput = ({ userData, setUserData, isEdit }) => (
         )}
       </div>
     ) : (
-      <span className="text-gray-700 text-sm">{userData.allergies || "-"}</span>
+      <span className="text-gray-700 text-sm">
+        {userData.allergies || "No Selected"}
+      </span>
     )}
   </div>
 );
@@ -448,7 +477,7 @@ const EditableTextarea = ({ label, value, isEdit, onChange }) => (
         className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
       />
     ) : (
-      <span className="text-gray-700 text-sm">{value || "-"}</span>
+      <span className="text-gray-700 text-sm">{value || "Nill"}</span>
     )}
   </div>
 );
