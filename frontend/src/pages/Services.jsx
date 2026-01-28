@@ -146,13 +146,27 @@ const Services = () => {
                   />
                 </div>
 
-                <div className="p-8">
+                <div className="p-8 space-y-6">
                   <h1 className="text-4xl font-bold text-gray-900 mb-6">
                     {selectedService.title}
                   </h1>
                   <p className="text-lg text-gray-600 leading-relaxed mb-8">
                     {selectedService.description}
                   </p>
+                  <div className="flex flex-wrap gap-3">
+                    {[
+                      "Trusted professionals",
+                      "Fast turnaround",
+                      "Secure data",
+                    ].map((item) => (
+                      <span
+                        key={item}
+                        className="px-4 py-2 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
                   <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center">
                     Get Started
                     <svg

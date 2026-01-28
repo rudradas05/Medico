@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -7,6 +13,24 @@ import { loadStripe } from "@stripe/stripe-js";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
+const SummaryCard = ({ label, value, tone }) => {
+  const tones = {
+    primary: "bg-primary/10 text-primary",
+    emerald: "bg-emerald-100 text-emerald-700",
+    red: "bg-red-100 text-red-700",
+  };
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-center justify-between">
+      <p className="text-sm text-gray-500">{label}</p>
+      <span
+        className={`text-lg font-semibold px-3 py-1 rounded-full ${tones[tone]}`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+};
+
 const MyAppointments = () => {
   const { backendurl, token, getDoctorsData, logoutUser } =
     useContext(AppContext);
@@ -14,6 +38,7 @@ const MyAppointments = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [cancelingId, setCancelingId] = useState(null);
   const [payingId, setPayingId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const months = [
     "Jan",
@@ -79,6 +104,50 @@ const MyAppointments = () => {
     return appointmentDateTime < new Date();
   };
 
+  const summary = useMemo(() => {
+    let upcoming = 0,
+      completed = 0,
+      cancelled = 0;
+    appointments.forEach((app) => {
+      if (app.cancelled) cancelled += 1;
+      else if (app.isCompleted) completed += 1;
+      else upcoming += 1;
+    });
+    return { upcoming, completed, cancelled };
+  }, [appointments]);
+
+  const getStatusPill = (appointment) => {
+    if (appointment.cancelled)
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+          Cancelled
+        </span>
+      );
+    if (appointment.isCompleted)
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+          Completed
+        </span>
+      );
+    if (isExpired(appointment.slotDate, appointment.slotTime))
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">
+          Expired
+        </span>
+      );
+    if (appointment.payment)
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+          Paid
+        </span>
+      );
+    return (
+      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+        Pending
+      </span>
+    );
+  };
+
   const handleCancelAppointment = async (appointmentId) => {
     setCancelingId(appointmentId);
     try {
@@ -137,10 +206,42 @@ const MyAppointments = () => {
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="max-w-5xl mx-auto p-4">
       <h2 className="text-2xl font-semibold mb-6 border-b pb-3">
         My Appointments
       </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <SummaryCard label="Upcoming" value={summary.upcoming} tone="primary" />
+        <SummaryCard label="Completed" value={summary.completed} tone="emerald" />
+        <SummaryCard label="Cancelled" value={summary.cancelled} tone="red" />
+      </div>
+
+      {/* Filter controls */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {["all", "upcoming", "completed", "cancelled"].map((filter) => {
+          const labels = {
+            all: "All",
+            upcoming: "Upcoming",
+            completed: "Completed",
+            cancelled: "Cancelled",
+          };
+          const active = statusFilter === filter;
+          return (
+            <button
+              key={filter}
+              onClick={() => setStatusFilter(filter)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                active
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-white border border-gray-200 text-gray-700 hover:border-primary/50"
+              }`}
+            >
+              {labels[filter]}
+            </button>
+          );
+        })}
+      </div>
 
       {appointments.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
@@ -148,27 +249,43 @@ const MyAppointments = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {appointments.map((appointment) => (
+          {appointments
+            .filter((appointment) => {
+              if (statusFilter === "all") return true;
+              if (statusFilter === "upcoming")
+                return (
+                  !appointment.cancelled &&
+                  !appointment.isCompleted &&
+                  !isExpired(appointment.slotDate, appointment.slotTime)
+                );
+              if (statusFilter === "completed") return appointment.isCompleted;
+              if (statusFilter === "cancelled") return appointment.cancelled;
+              return true;
+            })
+            .map((appointment) => (
             <div
               key={appointment._id}
               className="bg-white rounded-lg shadow-sm p-4 border transition-all hover:shadow-md"
             >
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Doctor's Image */}
-                <div className="flex-shrink-0">
-                  <img
-                    className="w-32 h-32 object-cover rounded-lg bg-gray-100"
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Doctor's Image */}
+                  <div className="flex-shrink-0">
+                    <img
+                      className="w-32 h-32 object-cover rounded-lg bg-gray-100"
                     src={appointment.docData.image}
                     alt={`Dr. ${appointment.docData.name}`}
                     onError={(e) => (e.target.src = "/default-doctor.jpg")}
                   />
                 </div>
 
-                <div className="flex-grow">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {appointment.docData.name}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-2">
+                <div className="flex-grow space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {appointment.docData.name}
+                    </h3>
+                    {getStatusPill(appointment)}
+                  </div>
+                  <p className="text-sm text-gray-600">
                     {appointment.docData.speciality}
                   </p>
 

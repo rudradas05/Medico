@@ -8,6 +8,8 @@ const Doctors = () => {
   const { speciality, docId } = useParams();
   const [search, setSearch] = useState("");
   const [showFilter, setShowFilter] = useState(false);
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [sortBy, setSortBy] = useState("name");
   const navigate = useNavigate();
   const { doctors = [], currencySymbol = "$" } = useContext(AppContext);
 
@@ -19,16 +21,24 @@ const Doctors = () => {
   const filteredDoctors = useMemo(() => {
     if (!Array.isArray(doctors)) return [];
 
-    return doctors.filter((doctor) => {
+    const list = doctors.filter((doctor) => {
       const matchesSpeciality = !speciality || doctor.speciality === speciality;
       const matchesSearch =
         !search.trim() ||
         doctor.name.toLowerCase().includes(search.toLowerCase()) ||
         doctor.speciality.toLowerCase().includes(search.toLowerCase());
+      const matchesAvailability = onlyAvailable ? doctor.available : true;
 
-      return matchesSpeciality && matchesSearch;
+      return matchesSpeciality && matchesSearch && matchesAvailability;
     });
-  }, [doctors, speciality, search]);
+
+    return list.sort((a, b) => {
+      if (sortBy === "fee") {
+        return Number(a.fees || 0) - Number(b.fees || 0);
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [doctors, speciality, search, onlyAvailable, sortBy]);
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -53,8 +63,8 @@ const Doctors = () => {
           </p>
         </motion.header>
 
-        <div className="mb-16 max-w-4xl mx-auto">
-          <div className="relative mb-8">
+        <div className="mb-16 max-w-5xl mx-auto">
+          <div className="relative mb-4">
             <FiSearch className="absolute top-4 left-4 text-gray-400 text-xl" />
             <input
               value={search}
@@ -64,17 +74,44 @@ const Doctors = () => {
             />
           </div>
 
-          <div className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => setOnlyAvailable((v) => !v)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  onlyAvailable
+                    ? "bg-teal-600 text-white shadow-sm"
+                    : "bg-white border border-gray-200 text-gray-700 hover:border-teal-300"
+                }`}
+              >
+                Show Available Only
+              </button>
+              <div className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-full text-sm">
+                <label className="text-gray-600">Sort by:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-transparent focus:outline-none text-gray-800"
+                >
+                  <option value="name">Name A-Z</option>
+                  <option value="fee">Lowest Fee</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowFilter(!showFilter)}
+              className="md:hidden self-start text-teal-600 hover:text-teal-700 text-sm font-semibold"
+            >
+              {showFilter ? "Hide" : "Show"} Specialities
+            </button>
+          </div>
+
+          <div className="mb-10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800">
                 Specializations
               </h2>
-              <button
-                onClick={() => setShowFilter(!showFilter)}
-                className="sm:hidden text-teal-600 hover:text-teal-700"
-              >
-                {showFilter ? "Hide" : "Show"} Filters
-              </button>
             </div>
 
             <div
@@ -117,29 +154,38 @@ const Doctors = () => {
                 initial="hidden"
                 animate="visible"
                 whileHover="hover"
-                className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer"
+                className="bg-white rounded-2xl shadow-md overflow-hidden cursor-pointer border border-gray-100 hover:shadow-lg transition-shadow"
                 onClick={() => navigate(`/appointment/${doctor._id}`)}
               >
-                <div className="relative  bg-gray-100">
+                <div className="relative bg-gray-50 h-64 flex items-center justify-center">
                   <img
                     src={doctor.image}
                     alt={`${doctor.name}, ${doctor.speciality}`}
-                    className="w-full h-full object-cover"
+                    className="max-h-full w-full object-contain px-3"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/30" />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-gray-900/10" />
                 </div>
 
                 <div className="p-6">
-                  <div className="mb-4">
+                  <div className="mb-4 flex items-start justify-between gap-2">
                     <h3 className="text-xl font-semibold text-gray-900">
                       {doctor.name}
                     </h3>
-                    <p className="text-teal-600 font-medium">
-                      {doctor.speciality}
-                    </p>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        doctor.available
+                          ? "bg-teal-50 text-teal-700 border border-teal-100"
+                          : "bg-red-50 text-red-700 border border-red-100"
+                      }`}
+                    >
+                      {doctor.available ? "Available" : "Not Available"}
+                    </span>
                   </div>
+                  <p className="text-teal-600 font-medium mb-3">
+                    {doctor.speciality}
+                  </p>
 
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-2 mb-6">
                     <div className="flex items-center gap-2 text-sm">
                       <FiStar className="text-amber-500" />
                       <span className="font-medium">4.9 Rating</span>
@@ -150,26 +196,23 @@ const Doctors = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <FiClock className="text-purple-600" />
-                      <div className="flex items-center gap-2 text-sm">
-                        {doctor.available ? (
-                          <span className="text-green-600 font-medium">
-                            ✅ Available
-                          </span>
-                        ) : (
-                          <span className="text-red-600 font-medium">
-                            ❌ Unavailable
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-gray-700">
+                        {(doctor.slots_booked &&
+                          Object.keys(doctor.slots_booked).length) ||
+                          0}{" "}
+                        booked slots
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
+                    <div className="flex items-center gap-2 text-gray-800">
+                      <FiDollarSign className="text-teal-500" />
+                      <span className="font-semibold">
                         {currencySymbol}
                         {doctor.fees || "120"}
                       </span>
+                      <span className="text-xs text-gray-500">per session</span>
                     </div>
                     <button
                       className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"

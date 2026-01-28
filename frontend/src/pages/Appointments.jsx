@@ -24,6 +24,12 @@ const Appointment = () => {
   const [selectedTime, setSelectedTime] = useState("");
   const [loading, setLoading] = useState(false);
   const [todayMessage, setTodayMessage] = useState("");
+  const selectedSlot =
+    selectedDayIndex !== -1 && selectedTime
+      ? availableSlots[selectedDayIndex]?.find(
+          (slot) => slot.time === selectedTime
+        )
+      : null;
 
   const SLOT_CONFIG = {
     START_HOUR: 10,
@@ -179,7 +185,7 @@ const Appointment = () => {
     return <div className="text-center py-8">Loading doctor details...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-8 bg-gradient-to-b from-white via-white to-teal-50/40 rounded-3xl shadow-sm border border-teal-50">
       {/* Doctor Profile Section */}
       <section className="flex flex-col md:flex-row gap-8 mb-12">
         <img
@@ -202,53 +208,74 @@ const Appointment = () => {
       </section>
 
       {/* Booking Interface */}
-      <section className="mb-16">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+      <section className="mb-16 space-y-6">
+        <h2 className="text-2xl font-semibold text-gray-800">
           Select Appointment Time
         </h2>
 
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {availableSlots.length > 0 &&
-            availableSlots.map((daySlots, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setSelectedDayIndex(index);
-                  setSelectedTime("");
-                }}
-                className={`min-w-[120px] p-4 rounded-lg text-center transition-all ${
-                  selectedDayIndex === index
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 hover:bg-gray-200"
-                }`}
-              >
-                {daySlots.length > 0 ? (
-                  <>
-                    <p className="font-medium">
-                      {format(new Date(daySlots[0].isoDate), "EEE")}
-                    </p>
-                    <p className="text-lg">
-                      {format(new Date(daySlots[0].isoDate), "dd")}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-gray-500">No Slots</p>
-                )}
-              </button>
-            ))}
+        {/* Quick summary */}
+        <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {availableSlots.length > 0 &&
+              availableSlots.map((daySlots, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setSelectedDayIndex(index);
+                    setSelectedTime("");
+                  }}
+                  className={`min-w-[120px] p-4 rounded-lg text-center transition-all shadow-sm ${
+                    selectedDayIndex === index
+                      ? "bg-primary text-white shadow-md scale-[1.02]"
+                      : "bg-white border border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  {daySlots.length > 0 ? (
+                    <>
+                      <p className="font-semibold">
+                        {format(new Date(daySlots[0].isoDate), "EEE")}
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {format(new Date(daySlots[0].isoDate), "dd")}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-gray-500">No Slots</p>
+                  )}
+                </button>
+              ))}
+          </div>
+
+          <div className="bg-white border border-teal-100 rounded-xl p-4 shadow-sm">
+            <p className="text-sm text-gray-500 mb-2">Selected slot</p>
+            {selectedSlot ? (
+              <div className="space-y-1">
+                <p className="text-lg font-semibold text-gray-800">
+                  {format(new Date(selectedSlot.isoDate), "EEE, dd MMM")}
+                </p>
+                <p className="text-primary font-semibold text-xl">
+                  {selectedSlot.time.toLowerCase()}
+                </p>
+              </div>
+            ) : (
+              <p className="text-gray-600">
+                Pick a date and time to see it here.
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
           {selectedDayIndex !== -1 &&
           availableSlots[selectedDayIndex]?.length > 0 ? (
             availableSlots[selectedDayIndex].map((slot, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedTime(slot.time)}
-                className={`p-3 rounded-md text-sm font-medium transition-all ${
+                className={`p-3 rounded-md text-sm font-medium transition-all shadow-sm ${
                   selectedTime === slot.time
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-100 hover:bg-green-100"
+                    ? "bg-primary text-white shadow-md scale-[1.02]"
+                    : "bg-white border border-gray-200 hover:border-primary/60"
                 }`}
               >
                 {slot.time.toLowerCase()}
