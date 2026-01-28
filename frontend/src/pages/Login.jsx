@@ -13,8 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { backendurl, token, setToken, isLoggedin, setIsLoggedin } =
-    useContext(AppContext);
+  const { backendurl, token, setToken, isLoggedin, setIsLoggedin } = useContext(AppContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,7 +24,7 @@ const Login = () => {
     e.preventDefault();
 
     if (token) {
-      toast.error("You're already logged in. Logout first.");
+      toast.error("You're already signed in. Please sign out to switch accounts.");
       return;
     }
 

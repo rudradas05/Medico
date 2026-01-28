@@ -54,7 +54,7 @@ const DoctorAppointments = () => {
           <p>Action</p>
         </div>
 
-        {appointments.reverse().map((item, index) => (
+        {[...appointments].reverse().map((item, index) => (
           <div
             key={item.id || index}
             className="grid grid-cols-[0.5fr_2fr_1fr_1fr_3fr_1fr_1fr] gap-1 py-3 px-3 border-b items-center"

@@ -8,7 +8,8 @@ import { loadStripe } from "@stripe/stripe-js";
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const MyAppointments = () => {
-  const { backendurl, token, getDoctorsData } = useContext(AppContext);
+  const { backendurl, token, getDoctorsData, logoutUser } =
+    useContext(AppContext);
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cancelingId, setCancelingId] = useState(null);
@@ -57,25 +58,21 @@ const MyAppointments = () => {
         setAppointments([]);
       }
     } catch (error) {
-      toast.error(
-        "Appointment fetch error:",
-        error.response?.status,
-        error.message
-      );
-      toast.error(
-        `Failed to load appointments: ${
-          error.response?.data?.message || "Something went wrong!"
-        }`
-      );
+      const message =
+        error.response?.status === 401
+          ? "Your session expired. Please sign in again."
+          : "We couldn't load your appointments. Please try again.";
 
-      if (error.response?.status === 401) {
-        logout();
-        setAppointments([]);
+      toast.error(message);
+
+      if (error.response?.status === 401 && logoutUser) {
+        logoutUser();
       }
+      setAppointments([]);
     } finally {
       setIsLoading(false);
     }
-  }, [backendurl, token]);
+  }, [backendurl, token, logoutUser]);
 
   const isExpired = (slotDate, slotTime) => {
     const appointmentDateTime = new Date(`${slotDate} ${slotTime}`);
@@ -95,14 +92,19 @@ const MyAppointments = () => {
         setAppointments((prev) =>
           prev.filter((app) => app._id !== appointmentId)
         );
-        toast.success("Appointment canceled successfully");
+        toast.success("Your appointment was canceled.");
         fetchAppointments();
         getDoctorsData();
+      } else {
+        toast.error(
+          data.message ||
+            "We couldn't cancel that appointment. Please try again."
+        );
       }
     } catch (error) {
       toast.error(
         `Cancel failed: ${
-          error.response?.data?.message || "Failed to cancel appointment."
+          error.response?.data?.message || "We couldn't cancel the appointment."
         }`
       );
     } finally {
@@ -122,7 +124,7 @@ const MyAppointments = () => {
       const stripe = await stripePromise;
       await stripe.redirectToCheckout({ sessionId: data.sessionId });
     } catch (error) {
-      toast.error("Failed to initiate payment. Please try again.");
+      toast.error("Payment couldn't start. Please try again.");
     } finally {
       setPayingId(null);
     }

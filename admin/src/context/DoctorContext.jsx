@@ -1,6 +1,5 @@
 import axios from "axios";
 import { createContext, useEffect, useState } from "react";
-import { data } from "react-router-dom";
 import { toast } from "react-toastify";
 
 export const DoctorContext = createContext();
@@ -30,7 +29,10 @@ const DoctorContextProvider = (props) => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(data.message);
+      toast.error(
+        error.response?.data?.message ||
+          "We couldn't load your appointments right now."
+      );
     }
   };
 
@@ -48,7 +50,10 @@ const DoctorContextProvider = (props) => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(data.message);
+      toast.error(
+        error.response?.data?.message ||
+          "We couldn't update the appointment. Please try again."
+      );
     }
   };
 
@@ -71,7 +76,10 @@ const DoctorContextProvider = (props) => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(data.message);
+      toast.error(
+        error.response?.data?.message ||
+          "We couldn't cancel this appointment. Please try again."
+      );
     } finally {
       setCancelingId(null);
     }
@@ -88,7 +96,10 @@ const DoctorContextProvider = (props) => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(data.message);
+      toast.error(
+        error.response?.data?.message ||
+          "We couldn't load the dashboard. Please try again."
+      );
     }
   };
 

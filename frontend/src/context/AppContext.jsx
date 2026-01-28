@@ -5,7 +5,8 @@ import { toast } from "react-toastify";
 export const AppContext = createContext();
 
 const AppContextProvider = (props) => {
-  const currencySymbol = "₹";
+  
+  const currencySymbol = "\u20B9";
   const backendurl = import.meta.env.VITE_BACKEND_URL;
   const [doctors, setDoctors] = useState([]);
   const [token, setToken] = useState(
@@ -32,7 +33,7 @@ const AppContextProvider = (props) => {
     setIsLoggedin(false);
 
     setUserData(false);
-    toast.info("You have been logged out");
+    toast.info("You are signed out. Please sign in again to continue.");
   };
 
   const loadUserData = async () => {
@@ -48,7 +49,10 @@ const AppContextProvider = (props) => {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(
+        error.response?.data?.message ||
+          "We couldn't load your profile. Please try again."
+      );
     }
   };
 
@@ -59,18 +63,24 @@ const AppContextProvider = (props) => {
       if (data.success) {
         setDoctors(data.doctors);
       } else {
-        toast.error(error.message);
+        toast.error(
+          data.message || "We couldn't load the doctors list. Please try again."
+        );
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(
+        error.message || "We couldn't load the doctors list. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const verification_status_user = async () => {
-    if (userData.isAccoutverified === true) {
+    if (userData && userData.isAccoutverified === true) {
       setIsVerified(true);
+    } else {
+      setIsVerified(false);
     }
   };
 

@@ -20,7 +20,15 @@ const App = () => {
   const { doctortoken } = useContext(DoctorContext);
   return admintoken || doctortoken ? (
     <div className="bg-[#F8F9FD]">
-      <ToastContainer />
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar
+        pauseOnHover={false}
+        newestOnTop
+        closeOnClick
+        theme="colored"
+      />
       <Navbar />
       <div className="flex items-start">
         <Sidebar />
@@ -41,7 +49,15 @@ const App = () => {
   ) : (
     <>
       <Login />
-      <ToastContainer />
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar
+        pauseOnHover={false}
+        newestOnTop
+        closeOnClick
+        theme="colored"
+      />
     </>
   );
 };

@@ -115,12 +115,12 @@ const Appointment = () => {
 
   const handleBooking = async () => {
     if (!token) {
-      toast.info("Please login to book an appointment");
+      toast.info("Please sign in to book an appointment");
       return navigate("/login");
     }
 
     if (selectedDayIndex === -1 || !selectedTime) {
-      toast.error("Please select a time slot");
+      toast.error("Select a date and time before booking.");
       return;
     }
 
@@ -129,7 +129,7 @@ const Appointment = () => {
     );
 
     if (!selectedSlot) {
-      toast.error("This slot is already booked. Please choose another.");
+      toast.error("That time was just taken. Please pick another slot.");
       return;
     }
 
@@ -144,14 +144,19 @@ const Appointment = () => {
       );
 
       if (data.success) {
-        toast.success("Appointment booked successfully!");
+        toast.success(
+          "Your appointment is booked. You can see it in My Appointments."
+        );
         await getDoctorsData();
         navigate("/my-appointments");
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Something went wrong");
+      toast.error(
+        error.response?.data?.message ||
+          "We couldn't book that appointment. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -161,7 +166,9 @@ const Appointment = () => {
     if (!doctors.length) return;
 
     if (!currentDoctor) {
-      toast.error("Doctor not found");
+      toast.error(
+        "We couldn't find that doctor. Redirecting to the doctor list."
+      );
       navigate("/doctors");
     } else if (!doctor) {
       setDoctor(currentDoctor);

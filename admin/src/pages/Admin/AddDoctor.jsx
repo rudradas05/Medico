@@ -27,7 +27,7 @@ const AddDoctor = () => {
     e.preventDefault();
     try {
       if (!docImg) {
-        return toast.error("Image not selected");
+        return toast.error("Please add a doctor photo before submitting.");
       }
       setLoading(true);
       const formData = new FormData();

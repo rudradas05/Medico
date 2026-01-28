@@ -20,7 +20,15 @@ import VerifyPayment from "./pages/VerifyPayment";
 const App = () => {
   return (
     <div className="mx-4 sm:mx-[5%]">
-      <ToastContainer />
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar
+        pauseOnHover={false}
+        newestOnTop
+        closeOnClick
+        theme="colored"
+      />
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
