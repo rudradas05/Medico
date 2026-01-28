@@ -204,6 +204,22 @@ const Appointment = () => {
             {currencySymbol}
             {doctor.fees} consultation fee
           </p>
+          <div className="flex items-center gap-3">
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                doctor.available
+                  ? "bg-teal-50 text-teal-700 border border-teal-100"
+                  : "bg-red-50 text-red-700 border border-red-100"
+              }`}
+            >
+              {doctor.available ? "Doctor is available" : "Doctor is not available"}
+            </span>
+            {!doctor.available && (
+              <span className="text-sm text-gray-500">
+                You can still view the profile, but booking is disabled.
+              </span>
+            )}
+          </div>
         </div>
       </section>
 
@@ -299,12 +315,20 @@ const Appointment = () => {
         {/* Booking Action */}
         <button
           onClick={handleBooking}
-          disabled={loading || !selectedTime}
+          disabled={loading || !selectedTime || !doctor.available}
           className={`mt-8 w-full py-3 rounded-lg font-semibold text-white transition-all ${
-            loading ? "bg-gray-400" : "bg-primary hover:bg-primary-dark"
+            doctor.available
+              ? loading
+                ? "bg-gray-400"
+                : "bg-primary hover:bg-primary-dark"
+              : "bg-gray-300 cursor-not-allowed"
           }`}
         >
-          {loading ? "Processing..." : "Confirm Appointment"}
+          {doctor.available
+            ? loading
+              ? "Processing..."
+              : "Confirm Appointment"
+            : "Doctor not available for booking"}
         </button>
       </section>
 
