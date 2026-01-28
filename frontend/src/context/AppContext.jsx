@@ -34,6 +34,8 @@ const AppContextProvider = (props) => {
 
     setUserData(false);
     toast.info("You are signed out. Please sign in again to continue.");
+    // Ensure user lands on home after any kind of logout (manual or expired token).
+    window.location.replace("/");
   };
 
   const loadUserData = async () => {
