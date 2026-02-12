@@ -64,10 +64,277 @@ const CATEGORY_ICONS = {
   "neurological-functional": "🧠",
 };
 
+/* ─── Edit Modal ─── */
+const EditServiceModal = ({
+  service,
+  backendurl,
+  admintoken,
+  onClose,
+  onUpdated,
+}) => {
+  const [name, setName] = useState(service.name || "");
+  const [description, setDescription] = useState(service.description || "");
+  const [price, setPrice] = useState(service.price || "");
+  const [category, setCategory] = useState(service.category || "laboratory");
+  const [instructions, setInstructions] = useState(
+    (service.preTestInstructions || []).join(", "),
+  );
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(
+    service.image ? resolveImageUrl(service.image, backendurl) : "",
+  );
+  const [saving, setSaving] = useState(false);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name || !description || !price) {
+      return toast.error("Name, description and price are required");
+    }
+
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append("serviceId", service._id);
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("price", Number(price));
+      formData.append("category", category);
+
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
+      const preTestInstructions = instructions
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (preTestInstructions.length > 0) {
+        formData.append(
+          "preTestInstructions",
+          JSON.stringify(preTestInstructions),
+        );
+      } else {
+        formData.append("preTestInstructions", JSON.stringify([]));
+      }
+
+      const { data } = await axios.post(
+        `${backendurl}/api/services/admin/update`,
+        formData,
+        { headers: { admintoken } },
+      );
+
+      if (data.success) {
+        toast.success("Service updated successfully!");
+        onUpdated();
+        onClose();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Update failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-6 py-4 rounded-t-2xl">
+          <h3 className="text-lg font-semibold text-slate-800">Edit Service</h3>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Service Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="admin-input"
+              required
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description *
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="admin-input"
+              required
+            />
+          </div>
+
+          {/* Price & Category */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Price (₹) *
+              </label>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="admin-input"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="admin-input"
+              >
+                <option value="imaging-radiology">Imaging & Radiology</option>
+                <option value="laboratory">Laboratory Tests</option>
+                <option value="cardiovascular-pulmonary">
+                  Cardiovascular & Pulmonary
+                </option>
+                <option value="endoscopy">Endoscopy</option>
+                <option value="neurological-functional">
+                  Neurological & Functional
+                </option>
+              </select>
+            </div>
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Service Image
+            </label>
+            <div className="rounded-2xl border-2 border-dashed border-teal-100 bg-teal-50/40 p-4 text-center">
+              <label htmlFor="edit-service-img" className="cursor-pointer">
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="relative h-32 w-32 overflow-hidden rounded-xl bg-white ring-1 ring-teal-100">
+                    {imagePreview ? (
+                      <img
+                        className="w-full h-full object-cover"
+                        src={imagePreview}
+                        alt="Preview"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">
+                        {CATEGORY_ICONS[category] || "🧪"}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <svg
+                        className="w-8 h-8 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {imageFile ? imageFile.name : "Click to change image"}
+                  </p>
+                </div>
+              </label>
+              <input
+                type="file"
+                id="edit-service-img"
+                accept="image/*"
+                hidden
+                onChange={handleImageChange}
+              />
+            </div>
+          </div>
+
+          {/* Pre-Test Instructions */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Pre-Test Instructions (comma separated)
+            </label>
+            <input
+              type="text"
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              className="admin-input"
+              placeholder="Fast for 12 hours, Avoid alcohol"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-xl border border-slate-200 py-3 font-semibold text-slate-600 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className={`flex-1 rounded-xl py-3 font-semibold text-white transition-all ${
+                saving
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-primary hover:bg-teal-600"
+              }`}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* ─── Services List ─── */
 const ServicesList = () => {
   const { backendurl, admintoken } = useContext(AdminContext);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingService, setEditingService] = useState(null);
 
   const fetchServices = async () => {
     try {
@@ -194,6 +461,12 @@ const ServicesList = () => {
               {/* Actions */}
               <div className="flex gap-2 flex-shrink-0">
                 <button
+                  onClick={() => setEditingService(service)}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+                >
+                  Edit
+                </button>
+                <button
                   onClick={() =>
                     toggleAvailability(service._id, service.available)
                   }
@@ -215,6 +488,17 @@ const ServicesList = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingService && (
+        <EditServiceModal
+          service={editingService}
+          backendurl={backendurl}
+          admintoken={admintoken}
+          onClose={() => setEditingService(null)}
+          onUpdated={fetchServices}
+        />
       )}
     </div>
   );

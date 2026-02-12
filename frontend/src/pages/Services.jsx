@@ -176,7 +176,7 @@ const Services = () => {
         </div>
       </section>
 
-      <section className="mx-auto -mt-6 max-w-6xl px-2 sm:px-4">
+      <section className="mx-auto mt-5 max-w-6xl px-2 sm:mt-6 sm:px-4">
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-md sm:p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative w-full lg:max-w-md">
