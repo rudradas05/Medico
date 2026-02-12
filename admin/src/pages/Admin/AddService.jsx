@@ -67,14 +67,14 @@ const AddService = () => {
   };
 
   return (
-    <div className="m-5 w-full max-w-3xl">
-      <h2 className="text-xl font-semibold mb-6 text-gray-800">
+    <div className="w-full max-w-4xl">
+      <h2 className="mb-6 text-xl font-semibold text-slate-800">
         Add Diagnostic Service
       </h2>
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-5 bg-white rounded-xl p-6 shadow-sm border"
+        className="admin-card space-y-5 rounded-2xl p-6 sm:p-8"
       >
         {/* Name */}
         <div>
@@ -85,7 +85,7 @@ const AddService = () => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            className="admin-input"
             placeholder="e.g., Blood Sugar Test"
             required
           />
@@ -100,7 +100,7 @@ const AddService = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            className="admin-input"
             placeholder="Detailed description of the service..."
             required
           />
@@ -116,7 +116,7 @@ const AddService = () => {
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="admin-input"
               placeholder="99"
               required
             />
@@ -128,7 +128,7 @@ const AddService = () => {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="admin-input"
             >
               <option value="imaging-radiology">Imaging & Radiology</option>
               <option value="laboratory">Laboratory Tests</option>
@@ -148,10 +148,10 @@ const AddService = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Service Image (optional)
           </label>
-          <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center">
+          <div className="rounded-2xl border-2 border-dashed border-teal-100 bg-teal-50/40 p-4 text-center">
             <label htmlFor="service-img" className="cursor-pointer">
               <div className="flex flex-col items-center space-y-3">
-                <div className="relative w-32 h-32 rounded-xl bg-gray-50 overflow-hidden">
+                <div className="relative h-32 w-32 overflow-hidden rounded-xl bg-white ring-1 ring-teal-100">
                   {image ? (
                     <img
                       className="w-full h-full object-cover"
@@ -215,14 +215,14 @@ const AddService = () => {
             type="text"
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            className="admin-input"
             placeholder="Fast for 12 hours, Avoid alcohol"
           />
         </div>
 
         {/* Info about slots */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-700">
+        <div className="rounded-lg border border-teal-100 bg-teal-50 p-4">
+          <p className="text-sm text-teal-700">
             <strong>Note:</strong> Time slots are automatically generated daily
             from 9:00 AM to 9:00 PM with 30-minute intervals. No manual slot
             configuration needed.
@@ -232,10 +232,10 @@ const AddService = () => {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-3 rounded-lg font-semibold text-white transition-all ${
+          className={`w-full rounded-xl py-3 font-semibold text-white transition-all ${
             loading
               ? "bg-gray-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700"
+              : "bg-primary hover:bg-teal-600"
           }`}
         >
           {loading ? "Adding..." : "Add Service"}

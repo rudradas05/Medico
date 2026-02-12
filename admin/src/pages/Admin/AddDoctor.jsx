@@ -41,14 +41,14 @@ const AddDoctor = () => {
       formData.append("degree", degree);
       formData.append(
         "address",
-        JSON.stringify({ line1: address1, line2: address2 })
+        JSON.stringify({ line1: address1, line2: address2 }),
       );
       formData.append("about", about);
 
       const { data } = await axios.post(
         backendurl + "/api/admin/add-doctor",
         formData,
-        { headers: { admintoken } }
+        { headers: { admintoken } },
       );
       if (data.success) {
         toast.success(data.message);
@@ -74,16 +74,16 @@ const AddDoctor = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="  mx-4 my-6 max-w-4xl">
-      <div className="text-2xl font-bold text-gray-800 mb-6">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-5xl">
+      <div className="mb-6 text-2xl font-bold text-slate-800">
         Add New Doctor
       </div>
 
-      <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
-        <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center">
+      <div className="admin-card space-y-6 rounded-2xl p-6 sm:p-8">
+        <div className="rounded-2xl border-2 border-dashed border-teal-100 bg-teal-50/40 p-4 text-center">
           <label htmlFor="doc-img" className="cursor-pointer">
             <div className="flex flex-col items-center space-y-3">
-              <div className="relative w-24 h-24 rounded-full bg-gray-50 overflow-hidden">
+              <div className="relative h-24 w-24 overflow-hidden rounded-full bg-white ring-1 ring-teal-100">
                 <img
                   className="w-full h-full object-cover"
                   src={
@@ -137,7 +137,7 @@ const AddDoctor = () => {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
                 placeholder="Dr. John Doe"
               />
             </div>
@@ -151,7 +151,7 @@ const AddDoctor = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
                 placeholder="doctor@example.com"
               />
             </div>
@@ -165,7 +165,7 @@ const AddDoctor = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
                 placeholder="••••••••"
               />
             </div>
@@ -179,7 +179,7 @@ const AddDoctor = () => {
               <select
                 value={speciality}
                 onChange={(e) => setSpeciality(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
               >
                 {[
                   "General Physician",
@@ -203,7 +203,7 @@ const AddDoctor = () => {
               <select
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
               >
                 {Array.from({ length: 30 }, (_, i) => (
                   <option key={i + 1} value={`${i + 1} Year`}>
@@ -218,7 +218,7 @@ const AddDoctor = () => {
                 Consultation Fee *
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 ml-1">
                   {currencySymbol}
                 </span>
                 <input
@@ -227,7 +227,7 @@ const AddDoctor = () => {
                   required
                   value={fees}
                   onChange={(e) => setFees(e.target.value)}
-                  className="w-full pl-8 px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="admin-input pl-8 ml-1"
                   placeholder="150"
                 />
               </div>
@@ -245,7 +245,7 @@ const AddDoctor = () => {
               required
               value={degree}
               onChange={(e) => setDegree(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="admin-input"
               placeholder="MBBS, MD, etc."
             />
           </div>
@@ -260,7 +260,7 @@ const AddDoctor = () => {
                 required
                 value={address1}
                 onChange={(e) => setAddress1(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="admin-input"
                 placeholder="Street address"
               />
             </div>
@@ -268,7 +268,7 @@ const AddDoctor = () => {
               type="text"
               value={address2}
               onChange={(e) => setAddress2(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="admin-input"
               placeholder="Apartment, suite, etc. (optional)"
             />
           </div>
@@ -283,20 +283,20 @@ const AddDoctor = () => {
             value={about}
             onChange={(e) => setAbout(e.target.value)}
             rows={4}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="admin-input"
             placeholder="Describe the doctor's expertise and qualifications..."
           />
         </div>
 
         <motion.div
-          className="bg-white rounded-xl shadow-md p-6 space-y-6"
+          className="rounded-2xl border border-teal-100 bg-teal-50/40 p-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <motion.button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
+            className="admin-button flex w-full items-center justify-center px-6 py-3 text-base"
             whileTap={{ scale: 0.95 }}
             disabled={loading}
           >

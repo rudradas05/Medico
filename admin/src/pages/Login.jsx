@@ -49,38 +49,41 @@ const Login = () => {
   };
 
   return (
-    <form onSubmit={onSubmitHandler} className="min-h-[80vh] flex items-center">
-      <div className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-[#5E5E5E] text-sm shadow-lg">
-        <p className="text-2xl font-semibold m-auto">
+    <form
+      onSubmit={onSubmitHandler}
+      className="flex min-h-screen items-center justify-center px-4 py-8"
+    >
+      <div className="admin-panel m-auto flex min-w-[340px] flex-col items-start gap-3 rounded-2xl p-8 text-sm text-[#5E5E5E] sm:min-w-96">
+        <p className="m-auto text-2xl font-semibold">
           <span className="text-primary">{state}</span> Login
         </p>
-        <div className="w-full">
-          <p>Email</p>
+        <div className="mt-3 w-full">
+          <p className="mb-1 text-slate-700">Email</p>
           <input
             onChange={(e) => setEmail(e.target.value)}
             value={email}
-            className="border border-[#DADADA] rounded w-full p-2 mt-1"
+            className="admin-input"
             type="email"
             placeholder="Enter your email"
             required
           />
         </div>
         <div className="w-full">
-          <p>Password</p>
+          <p className="mb-1 text-slate-700">Password</p>
           <input
             onChange={(e) => setPassword(e.target.value)}
             value={password}
-            className="border border-[#DADADA] rounded w-full p-2 mt-1"
+            className="admin-input"
             type="password"
             placeholder="Enter your password"
             required
           />
         </div>
-        <button className="bg-primary text-white w-full py-2 rounded-md text-base">
+        <button className="admin-button mt-2 w-full py-2.5 text-base">
           Login
         </button>
         {state === "Admin" ? (
-          <p>
+          <p className="pt-1 text-slate-600">
             Doctor Login{" "}
             <span
               className="text-primary underline cursor-pointer"
@@ -90,7 +93,7 @@ const Login = () => {
             </span>
           </p>
         ) : (
-          <p>
+          <p className="pt-1 text-slate-600">
             Admin Login{" "}
             <span
               className="text-primary underline cursor-pointer"

@@ -69,22 +69,22 @@ const DoctorDashboard = () => {
     );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    <div className="mx-auto max-w-6xl">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
         {summaryCards.map((card, index) => (
           <motion.div
             key={index}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
-            className="flex items-center gap-4 bg-white p-5 rounded-xl shadow-md hover:shadow-lg border border-gray-200 transition cursor-pointer"
+            className="admin-card flex cursor-pointer items-center gap-4 rounded-2xl p-5 transition hover:-translate-y-0.5"
           >
-            <img src={card.icon} alt={card.label} className="w-12 h-12" />
+            <img src={card.icon} alt={card.label} className="h-12 w-12" />
             <div>
-              <p className="text-2xl font-semibold text-gray-800">
+              <p className="text-2xl font-semibold text-slate-800">
                 {localDashData ? card.count(localDashData) : "Loading..."}
               </p>
-              <p className="text-gray-600 text-sm">{card.label}</p>
+              <p className="text-sm text-slate-500">{card.label}</p>
             </div>
           </motion.div>
         ))}
@@ -98,7 +98,7 @@ const DoctorDashboard = () => {
           </h2>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="admin-card rounded-2xl p-6">
           {localDashData.latestAppointments.length === 0 ? (
             <p className="text-gray-500 text-center">No recent appointments.</p>
           ) : (
@@ -109,25 +109,25 @@ const DoctorDashboard = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="flex items-center gap-4 p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition"
+                  className="flex items-center gap-4 rounded-xl border border-teal-100 bg-teal-50/40 p-4 transition hover:bg-teal-50/70"
                 >
                   <img
                     src={item.docData.image}
                     alt="Doctor"
-                    className="w-14 h-14 rounded-full border"
+                    className="h-14 w-14 rounded-full border border-teal-100 object-cover"
                   />
                   <div className="flex-1">
-                    <p className="text-lg font-medium text-gray-900">
+                    <p className="text-lg font-medium text-slate-900">
                       {item.docData.name}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-500">
                       {formatAppointmentDate(item.slotDate)}, {item.slotTime}
                     </p>
                   </div>
                   {item.cancelled ? (
                     <p className="text-red-500 font-semibold">Cancelled</p>
                   ) : item.isCompleted ? (
-                    <p className="text-green-500">Completed</p>
+                    <p className="text-emerald-600">Completed</p>
                   ) : (
                     <button
                       className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"

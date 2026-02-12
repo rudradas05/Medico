@@ -59,32 +59,32 @@ const DoctorsList = () => {
   }, [admintoken]);
 
   return (
-    <div className="m-5 max-w-6xl mx-auto max-h-[80vh] overflow-y-scroll">
-      <h1 className="text-2xl font-bold text-gray-800 text-center">
+    <div className="mx-auto max-h-[80vh] max-w-6xl overflow-y-scroll">
+      <h1 className="text-center text-2xl font-bold text-slate-800">
         All Doctors
       </h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+      <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {doctors.map((doctor, index) => (
           <motion.div
             key={index}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
-            className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition p-4 flex flex-col items-center text-center"
+            className="admin-card flex flex-col items-center overflow-hidden rounded-2xl p-4 text-center transition hover:-translate-y-0.5"
           >
             <img
               src={resolveImageUrl(doctor.image, backendurl)}
               alt={doctor.name}
               loading="lazy"
-              className="w-24 h-24 object-cover rounded-full border-2 border-indigo-500"
+              className="h-24 w-24 rounded-full border-2 border-teal-500 object-cover"
             />
 
             <div className="mt-4">
-              <p className="text-lg font-semibold text-gray-900 flex items-center justify-center gap-2">
-                <FaUserMd className="text-indigo-600" /> {doctor.name}
+              <p className="flex items-center justify-center gap-2 text-lg font-semibold text-slate-900">
+                <FaUserMd className="text-teal-600" /> {doctor.name}
               </p>
-              <p className="text-sm text-gray-600">{doctor.speciality}</p>
+              <p className="text-sm text-slate-600">{doctor.speciality}</p>
             </div>
 
             <div className="mt-4 flex items-center gap-2">
@@ -95,9 +95,9 @@ const DoctorsList = () => {
                   onChange={() => changeAvailability(doctor._id)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 peer-checked:bg-indigo-600 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                <div className="h-6 w-11 rounded-full bg-gray-300 peer peer-checked:bg-primary peer-checked:after:translate-x-5 after:absolute after:left-[2px] after:top-0.5 after:h-5 after:w-5 after:rounded-full after:border after:bg-white after:transition-all after:content-['']"></div>
               </label>
-              <p className="text-gray-700 text-sm">
+              <p className="text-sm text-slate-700">
                 {doctor.available ? "Available" : "Unavailable"}
               </p>
             </div>

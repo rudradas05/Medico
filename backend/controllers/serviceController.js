@@ -300,11 +300,35 @@ const addService = async (req, res) => {
 
 const updateService = async (req, res) => {
   try {
-    const { serviceId, ...updateData } = req.body;
+    const { serviceId, preTestInstructions, ...updateData } = req.body;
     if (!serviceId) {
       return res
         .status(400)
         .json({ success: false, message: "Service ID required" });
+    }
+
+    // Handle image upload if a new file is provided
+    if (req.file) {
+      const imageUpload = await cloudinary.uploader.upload(req.file.path, {
+        resource_type: "image",
+      });
+      updateData.image = imageUpload.secure_url;
+    }
+
+    // Handle preTestInstructions (may arrive as JSON string from FormData)
+    if (preTestInstructions !== undefined) {
+      if (typeof preTestInstructions === "string") {
+        try {
+          updateData.preTestInstructions = JSON.parse(preTestInstructions);
+        } catch {
+          updateData.preTestInstructions = preTestInstructions
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      } else {
+        updateData.preTestInstructions = preTestInstructions;
+      }
     }
 
     const service = await diagnosticServiceModel.findByIdAndUpdate(

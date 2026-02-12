@@ -36,7 +36,7 @@ serviceRouter.post("/verify-payment", authUser, verifyServicePayment);
 
 // Admin routes
 serviceRouter.post("/admin/add", authAdmin, upload.single("image"), addService);
-serviceRouter.post("/admin/update", authAdmin, updateService);
+serviceRouter.post("/admin/update", authAdmin, upload.single("image"), updateService);
 serviceRouter.post("/admin/delete", authAdmin, deleteService);
 serviceRouter.get("/admin/bookings", authAdmin, getAllServiceBookings);
 serviceRouter.post(

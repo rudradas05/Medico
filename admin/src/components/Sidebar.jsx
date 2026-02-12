@@ -16,25 +16,27 @@ const Sidebar = () => {
   );
 
   return (
-    <aside className="min-h-screen  sm:min-w-64 bg-white border-r shadow-md flex flex-col">
-      <ul className="flex flex-col mt-6 text-gray-700">
+    <aside className="sticky top-[81px] min-h-[calc(100vh-81px)] w-16 sm:w-64">
+      <div className="admin-panel mr-2 mt-6 rounded-2xl p-2 sm:mr-4 sm:p-3">
+        <ul className="flex flex-col gap-1 text-gray-700">
         {filteredLinks.map(({ to, icon, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-4 py-3 px-6 rounded-r-full transition-all duration-300 ${
+              `flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-200 ${
                 isActive
-                  ? "bg-indigo-100 text-indigo-600 font-semibold border-r-4 border-indigo-500"
-                  : "hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-teal-50 text-teal-700 font-semibold shadow-sm border border-teal-100"
+                  : "hover:bg-slate-50 hover:text-slate-900"
               }`
             }
           >
-            <img src={icon} alt={`${label} Icon`} className="w-5 h-5" />
-            <span className="hidden md:block text-sm">{label}</span>
+            <img src={icon} alt={`${label} Icon`} className="h-5 w-5" />
+            <span className="hidden text-sm sm:block">{label}</span>
           </NavLink>
         ))}
-      </ul>
+        </ul>
+      </div>
     </aside>
   );
 };

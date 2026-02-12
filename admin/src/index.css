@@ -10,3 +10,54 @@
 * {
   font-family: Outfit;
 }
+
+:root {
+  --admin-bg: #f8fcfb;
+  --admin-panel: #ffffff;
+  --admin-border: #d7efe9;
+  --admin-text: #0f172a;
+}
+
+body {
+  color: var(--admin-text);
+  background: radial-gradient(
+      circle at top left,
+      rgba(20, 184, 166, 0.08),
+      transparent 36%
+    ),
+    radial-gradient(circle at bottom right, rgba(13, 148, 136, 0.06), transparent 42%),
+    var(--admin-bg);
+}
+
+.admin-shell {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.admin-panel {
+  border: 1px solid var(--admin-border);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.97), rgba(240, 253, 250, 0.92));
+  box-shadow:
+    0 16px 30px rgba(20, 184, 166, 0.08),
+    0 3px 8px rgba(2, 6, 23, 0.05);
+}
+
+.admin-card {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-panel);
+  box-shadow:
+    0 10px 22px rgba(2, 6, 23, 0.06),
+    0 2px 6px rgba(2, 6, 23, 0.03);
+}
+
+.admin-input {
+  @apply w-full rounded-xl border border-teal-100 px-4 py-2.5 text-sm text-slate-700 outline-none transition-all;
+}
+
+.admin-input:focus {
+  @apply border-primary ring-4 ring-teal-100;
+}
+
+.admin-button {
+  @apply rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-gray-400;
+}

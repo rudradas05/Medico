@@ -67,14 +67,14 @@ const ServiceBookings = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh] w-full">
-        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="m-5 w-full max-w-5xl">
-      <h2 className="text-xl font-semibold mb-6 text-gray-800">
+    <div className="w-full max-w-5xl">
+      <h2 className="mb-6 text-xl font-semibold text-slate-800">
         Service Bookings
       </h2>
 
@@ -85,7 +85,7 @@ const ServiceBookings = () => {
           {bookings.map((booking) => (
             <div
               key={booking._id}
-              className="bg-white rounded-xl p-5 shadow-sm border"
+              className="admin-card rounded-2xl p-5"
             >
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-grow space-y-2">
@@ -102,7 +102,7 @@ const ServiceBookings = () => {
                         Completed
                       </span>
                     ) : booking.payment ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-teal-100 text-teal-700">
                         Paid
                       </span>
                     ) : (
@@ -147,7 +147,7 @@ const ServiceBookings = () => {
                   <div className="flex gap-2 flex-shrink-0 sm:flex-col">
                     <button
                       onClick={() => completeBooking(booking._id)}
-                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition"
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition"
                     >
                       Complete
                     </button>

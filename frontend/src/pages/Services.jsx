@@ -154,13 +154,17 @@ const Services = () => {
               <p className="text-xs uppercase tracking-wide text-teal-100">
                 Active Services
               </p>
-              <p className="mt-1 text-2xl font-semibold">{activeServices.length}</p>
+              <p className="mt-1 text-2xl font-semibold">
+                {activeServices.length}
+              </p>
             </div>
             <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
               <p className="text-xs uppercase tracking-wide text-teal-100">
                 Categories
               </p>
-              <p className="mt-1 text-2xl font-semibold">{uniqueCategoryCount}</p>
+              <p className="mt-1 text-2xl font-semibold">
+                {uniqueCategoryCount}
+              </p>
             </div>
             <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
               <p className="text-xs uppercase tracking-wide text-teal-100">
@@ -189,7 +193,10 @@ const Services = () => {
             <div className="flex items-center gap-2 text-xs text-gray-500 sm:text-sm">
               <FiFilter className="h-4 w-4 text-primary" />
               <span>
-                Showing <strong className="text-gray-700">{filteredServices.length}</strong>{" "}
+                Showing{" "}
+                <strong className="text-gray-700">
+                  {filteredServices.length}
+                </strong>{" "}
                 {filteredServices.length === 1 ? "service" : "services"}
               </span>
             </div>

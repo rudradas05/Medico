@@ -22,7 +22,7 @@ const App = () => {
   const { admintoken } = useContext(AdminContext);
   const { doctortoken } = useContext(DoctorContext);
   return admintoken || doctortoken ? (
-    <div className="bg-[#F8F9FD]">
+    <div className="admin-shell">
       <ToastContainer
         position="top-right"
         autoClose={4000}
@@ -33,23 +33,28 @@ const App = () => {
         theme="colored"
       />
       <Navbar />
-      <div className="flex items-start">
+      <div className="mx-auto flex w-full max-w-[1680px] items-start">
         <Sidebar />
-        <Routes>
-          {/* Admin route */}
-          <Route path="/" element={<></>} />
-          <Route path="/admin-dashboard" element={<Dashboard />} />
-          <Route path="/all-appointments" element={<AllAppointments />} />
-          <Route path="/add-doctor" element={<AddDoctor />} />
-          <Route path="/doctor-list" element={<DoctorsList />} />
-          <Route path="/add-service" element={<AddService />} />
-          <Route path="/services-list" element={<ServicesList />} />
-          <Route path="/service-bookings" element={<ServiceBookings />} />
-          {/* Doctor routes */}
-          <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
-          <Route path="/doctor-profile" element={<DoctorProfile />} />
-          <Route path="/doctor-appointments" element={<DoctorAppointments />} />
-        </Routes>
+        <main className="min-h-[calc(100vh-80px)] flex-1 px-3 pb-8 pt-6 sm:px-6 lg:px-8">
+          <Routes>
+            {/* Admin route */}
+            <Route path="/" element={<></>} />
+            <Route path="/admin-dashboard" element={<Dashboard />} />
+            <Route path="/all-appointments" element={<AllAppointments />} />
+            <Route path="/add-doctor" element={<AddDoctor />} />
+            <Route path="/doctor-list" element={<DoctorsList />} />
+            <Route path="/add-service" element={<AddService />} />
+            <Route path="/services-list" element={<ServicesList />} />
+            <Route path="/service-bookings" element={<ServiceBookings />} />
+            {/* Doctor routes */}
+            <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+            <Route path="/doctor-profile" element={<DoctorProfile />} />
+            <Route
+              path="/doctor-appointments"
+              element={<DoctorAppointments />}
+            />
+          </Routes>
+        </main>
       </div>
     </div>
   ) : (

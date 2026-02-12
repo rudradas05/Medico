@@ -55,16 +55,16 @@ const DoctorProfile = () => {
 
   return (
     doctorData && (
-      <div className="max-w-6xl mx-auto p-4 md:p-8">
-        <div className="flex flex-col md:flex-row gap-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="flex flex-col gap-6 md:flex-row">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full md:w-80 flex-shrink-0 bg-white rounded-2xl shadow-lg p-6"
+            className="admin-card w-full flex-shrink-0 rounded-2xl p-6 md:w-80"
           >
             <div className="relative group">
               <img
-                className="w-full h-64 object-cover rounded-xl mb-4"
+                className="mb-4 h-64 w-full rounded-xl object-cover"
                 src={doctorData.image}
                 alt="Doctor"
               />
@@ -79,7 +79,7 @@ const DoctorProfile = () => {
                 {doctorData.degree} • {doctorData.speciality}
               </p>
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                <span className="rounded-full bg-teal-100 px-3 py-1 text-sm text-teal-800">
                   {doctorData.experience}
                 </span>
                 <div className="flex items-center gap-1">
@@ -96,17 +96,17 @@ const DoctorProfile = () => {
             </div>
           </motion.div>
 
-          <div className="flex-1 bg-white rounded-2xl shadow-lg p-6">
+          <div className="admin-card flex-1 rounded-2xl p-6">
             <div className="flex justify-between items-start mb-6">
               <h2 className="text-2xl font-bold text-gray-800">
                 Profile Information
               </h2>
               <button
                 onClick={() => setIsEdit(!isEdit)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
                 style={{
-                  backgroundColor: isEdit ? "#f3f4f6" : "#3b82f6",
-                  color: isEdit ? "#374151" : "white",
+                  backgroundColor: isEdit ? "#ecfdf5" : "#14b8a6",
+                  color: isEdit ? "#0f766e" : "white",
                 }}
               >
                 <FiEdit className="text-sm" />
@@ -126,7 +126,7 @@ const DoctorProfile = () => {
                     onChange={(e) =>
                       setDoctorData({ ...doctorData, about: e.target.value })
                     }
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="admin-input"
                     rows="4"
                   />
                 ) : (
@@ -151,7 +151,7 @@ const DoctorProfile = () => {
                       onChange={(e) =>
                         setDoctorData({ ...doctorData, fees: e.target.value })
                       }
-                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="admin-input"
                     />
                   ) : (
                     <p className="text-gray-600">
@@ -180,7 +180,7 @@ const DoctorProfile = () => {
                             },
                           })
                         }
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="admin-input"
                       />
                       <input
                         type="text"
@@ -194,7 +194,7 @@ const DoctorProfile = () => {
                             },
                           })
                         }
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="admin-input"
                       />
                     </div>
                   ) : (
@@ -219,7 +219,7 @@ const DoctorProfile = () => {
                       })
                     }
                     className={`relative w-12 h-6 rounded-full cursor-pointer transition-colors ${
-                      doctorData.available ? "bg-green-500" : "bg-gray-300"
+                      doctorData.available ? "bg-emerald-500" : "bg-gray-300"
                     }`}
                   >
                     <div
@@ -236,7 +236,7 @@ const DoctorProfile = () => {
                   onClick={updateDoctorData}
                   disabled={loading}
                   whileTap={{ scale: 0.95 }}
-                  className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="admin-button w-full py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center gap-2">

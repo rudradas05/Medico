@@ -21,11 +21,11 @@ const AllAppointments = () => {
   }, [admintoken]);
 
   return (
-    <div className="w-full max-w-8xl m-5">
-      <p className="mb-3 text-lg font-medium">Appointments</p>
-      <div className="bg-white border rounded text-sm max-h-[80vh] min-h-[60vh] overflow-y-scroll">
+    <div className="w-full">
+      <p className="mb-4 text-lg font-semibold text-slate-800">Appointments</p>
+      <div className="admin-card max-h-[80vh] min-h-[60vh] overflow-y-scroll rounded-2xl text-sm">
         {/* Table Header */}
-        <div className="hidden sm:grid grid-cols-[0.5fr_3fr_1fr_3fr_3fr_1fr_1fr] px-6 py-3 border-b bg-gray-100 font-semibold">
+        <div className="hidden grid-cols-[0.5fr_3fr_1fr_3fr_3fr_1fr_1fr] border-b border-teal-100 bg-teal-50/70 px-6 py-3 font-semibold text-slate-700 sm:grid">
           <p>#</p>
           <p>Patient Name</p>
           <p>Age</p>
@@ -40,14 +40,14 @@ const AllAppointments = () => {
           appointments.map((appointment, index) => (
             <div
               key={appointment._id || index}
-              className="grid grid-cols-[0.5fr_3fr_1fr_3fr_3fr_1fr_1fr] px-6 py-3 border-b items-center text-gray-500 hover:bg-gray-50"
+              className="grid grid-cols-[0.5fr_3fr_1fr_3fr_3fr_1fr_1fr] items-center border-b border-slate-100 px-6 py-3 text-gray-500 hover:bg-teal-50/40"
             >
               <p className="max-sm:hidden">{index + 1}</p>
               <div className="flex items-center gap-2">
                 <img
                   src={appointment.userData?.image || "/default-avatar.png"}
                   alt="User"
-                  className="w-8 h-8 rounded-full object-cover"
+                  className="h-8 w-8 rounded-full object-cover ring-1 ring-teal-100"
                 />
                 <p>{appointment.userData?.name || "Unknown"}</p>
               </div>
@@ -64,7 +64,7 @@ const AllAppointments = () => {
               </p>
               <div className="flex items-center gap-2">
                 <img
-                  className="w-8 rounded-full"
+                  className="w-8 rounded-full ring-1 ring-teal-100"
                   src={appointment.docData?.image || "/default-doctor.png"}
                   alt="Doctor"
                 />
@@ -80,7 +80,7 @@ const AllAppointments = () => {
                 <p className="text-green-500 font-semibold">Completed</p>
               ) : (
                 <button
-                  className="w-full sm:w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
+                  className="w-full rounded-md bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 disabled:opacity-50 sm:w-full"
                   onClick={() => cancelAppointment(appointment._id)}
                   disabled={
                     cancelingId === appointment._id || appointment.cancelled
