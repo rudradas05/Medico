@@ -6,11 +6,21 @@ import React, {
   useCallback,
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  FiArrowLeft,
+  FiBriefcase,
+  FiCalendar,
+  FiCheckCircle,
+  FiClock,
+  FiShield,
+  FiUser,
+} from "react-icons/fi";
 import { AppContext } from "../context/AppContext";
 import RelatedDoctors from "../components/RelatedDoctors";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { format, addDays, setHours, setMinutes, addMinutes } from "date-fns";
+import { resolveImageUrl } from "../utils/imageUrl";
 
 const Appointment = () => {
   const { docId } = useParams();
@@ -24,12 +34,14 @@ const Appointment = () => {
   const [selectedTime, setSelectedTime] = useState("");
   const [loading, setLoading] = useState(false);
   const [todayMessage, setTodayMessage] = useState("");
+
   const selectedSlot =
     selectedDayIndex !== -1 && selectedTime
-      ? availableSlots[selectedDayIndex]?.find(
-          (slot) => slot.time === selectedTime
-        )
+      ? availableSlots[selectedDayIndex]?.find((slot) => slot.time === selectedTime)
       : null;
+
+  const selectedDaySlots =
+    selectedDayIndex !== -1 ? availableSlots[selectedDayIndex] || [] : [];
 
   const SLOT_CONFIG = {
     START_HOUR: 10,
@@ -50,7 +62,7 @@ const Appointment = () => {
       const now = new Date();
 
       let startTime = setHours(setMinutes(date, 0), SLOT_CONFIG.START_HOUR);
-      let endTime = setHours(setMinutes(date, 0), SLOT_CONFIG.END_HOUR);
+      const endTime = setHours(setMinutes(date, 0), SLOT_CONFIG.END_HOUR);
 
       if (format(date, "yyyy-MM-dd") === format(now, "yyyy-MM-dd")) {
         if (now.getHours() >= SLOT_CONFIG.END_HOUR) return [];
@@ -88,7 +100,7 @@ const Appointment = () => {
     if (doctor) {
       const today = new Date();
       const slots = [];
-      let isTodayAvailable = true;
+
       for (let i = 0; i < 7; i++) {
         const date = addDays(today, i);
         let dailySlots = generateSlotsForDate(date);
@@ -98,7 +110,6 @@ const Appointment = () => {
 
           if (now.getHours() >= 21) {
             setTodayMessage("Today there are no available slots.");
-            isTodayAvailable = false;
           } else {
             dailySlots = dailySlots.filter((slot) => {
               const slotTime = new Date(`${slot.isoDate} ${slot.time}`);
@@ -107,7 +118,6 @@ const Appointment = () => {
 
             if (dailySlots.length === 0) {
               setTodayMessage("No available slots remaining for today.");
-              isTodayAvailable = false;
             }
           }
         }
@@ -130,11 +140,11 @@ const Appointment = () => {
       return;
     }
 
-    const selectedSlot = availableSlots[selectedDayIndex].find(
+    const pickedSlot = availableSlots[selectedDayIndex].find(
       (slot) => slot.time === selectedTime
     );
 
-    if (!selectedSlot) {
+    if (!pickedSlot) {
       toast.error("That time was just taken. Please pick another slot.");
       return;
     }
@@ -172,167 +182,260 @@ const Appointment = () => {
     if (!doctors.length) return;
 
     if (!currentDoctor) {
-      toast.error(
-        "We couldn't find that doctor. Redirecting to the doctor list."
-      );
+      toast.error("We couldn't find that doctor. Redirecting to the doctor list.");
       navigate("/doctors");
     } else if (!doctor) {
       setDoctor(currentDoctor);
     }
   }, [currentDoctor, navigate, doctors.length]);
 
-  if (!doctor)
-    return <div className="text-center py-8">Loading doctor details...</div>;
+  if (!doctor) {
+    return (
+      <div className="flex min-h-[62vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 bg-gradient-to-b from-white via-white to-teal-50/40 rounded-3xl shadow-sm border border-teal-50">
-      {/* Doctor Profile Section */}
-      <section className="flex flex-col md:flex-row gap-8 mb-12">
-        <img
-          src={doctor.image}
-          alt={doctor.name}
-          className="w-full md:w-1/3 rounded-xl shadow-lg object-cover"
-        />
+    <div className="min-h-screen pb-14 pt-4">
+      <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-500 text-white shadow-lg">
+        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-emerald-200/20 blur-2xl" />
 
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-gray-800">{doctor.name}</h1>
-          <p className="text-lg text-gray-600">
-            {doctor.degree} - {doctor.speciality}
-          </p>
-          <p className="text-gray-700 leading-relaxed">{doctor.about}</p>
-          <p className="text-xl font-semibold text-primary">
-            {currencySymbol}
-            {doctor.fees} consultation fee
-          </p>
-          <div className="flex items-center gap-3">
-            <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                doctor.available
-                  ? "bg-teal-50 text-teal-700 border border-teal-100"
-                  : "bg-red-50 text-red-700 border border-red-100"
-              }`}
+        <div className="relative grid gap-6 px-6 py-8 sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(220px,300px)] lg:items-center lg:px-10">
+          <div>
+            <button
+              onClick={() => navigate("/doctors")}
+              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20"
             >
-              {doctor.available ? "Doctor is available" : "Doctor is not available"}
-            </span>
-            {!doctor.available && (
-              <span className="text-sm text-gray-500">
-                You can still view the profile, but booking is disabled.
+              <FiArrowLeft className="h-4 w-4" />
+              Back to Doctors
+            </button>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-teal-50">
+                <FiShield className="h-3.5 w-3.5" />
+                Verified Specialist
               </span>
-            )}
+              <span
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                  doctor.available
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {doctor.available ? "Available" : "Unavailable"}
+              </span>
+            </div>
+
+            <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
+              {doctor.name}
+            </h1>
+            <p className="mt-2 text-sm font-medium text-teal-50 sm:text-base">
+              {doctor.degree} - {doctor.speciality}
+            </p>
+            <p className="mt-3 max-w-2xl text-sm text-teal-50/95 sm:text-base">
+              {doctor.about}
+            </p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm">
+                <p className="text-xs uppercase tracking-wide text-teal-100">Consultation</p>
+                <p className="mt-1 text-xl font-semibold">
+                  {currencySymbol}
+                  {doctor.fees}
+                </p>
+              </div>
+              <div className="rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm">
+                <p className="text-xs uppercase tracking-wide text-teal-100">Experience</p>
+                <p className="mt-1 text-xl font-semibold">{doctor.experience || "5 Years"}</p>
+              </div>
+              <div className="rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm">
+                <p className="text-xs uppercase tracking-wide text-teal-100">Window</p>
+                <p className="mt-1 text-xl font-semibold">Next 7 Days</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mx-auto h-64 w-full max-w-[300px] overflow-hidden rounded-2xl border border-white/25 bg-white/15 p-2 shadow-xl backdrop-blur-sm">
+            <img
+              src={resolveImageUrl(doctor.image, backendurl)}
+              alt={doctor.name}
+              className="h-full w-full rounded-xl object-cover object-top"
+            />
           </div>
         </div>
       </section>
 
-      {/* Booking Interface */}
-      <section className="mb-16 space-y-6">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Select Appointment Time
-        </h2>
+      <section className="mx-auto mt-8 grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <FiCalendar className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-gray-900">Select Appointment Time</h2>
+            </div>
 
-        {/* Quick summary */}
-        <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {availableSlots.length > 0 &&
-              availableSlots.map((daySlots, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setSelectedDayIndex(index);
-                    setSelectedTime("");
-                  }}
-                  className={`min-w-[120px] p-4 rounded-lg text-center transition-all shadow-sm ${
-                    selectedDayIndex === index
-                      ? "bg-primary text-white shadow-md scale-[1.02]"
-                      : "bg-white border border-gray-200 hover:bg-gray-50"
-                  }`}
-                >
-                  {daySlots.length > 0 ? (
-                    <>
-                      <p className="font-semibold">
-                        {format(new Date(daySlots[0].isoDate), "EEE")}
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {format(new Date(daySlots[0].isoDate), "dd")}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-gray-500">No Slots</p>
-                  )}
-                </button>
-              ))}
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {availableSlots.map((daySlots, index) => {
+                const dayDate = addDays(new Date(), index);
+                const isActive = selectedDayIndex === index;
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setSelectedDayIndex(index);
+                      setSelectedTime("");
+                    }}
+                    className={`min-w-[96px] rounded-xl border px-3 py-2 text-center transition ${
+                      isActive
+                        ? "border-primary bg-teal-50 text-primary"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-teal-200"
+                    } ${daySlots.length === 0 ? "opacity-70" : ""}`}
+                  >
+                    <p className="text-[11px] uppercase tracking-wide">
+                      {format(dayDate, "EEE")}
+                    </p>
+                    <p className="text-xl font-semibold leading-6">
+                      {format(dayDate, "dd")}
+                    </p>
+                    <p className="text-[11px] uppercase tracking-wide">
+                      {format(dayDate, "MMM")}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-5">
+              <p className="mb-3 text-sm font-medium text-gray-700">Available Slots</p>
+              {selectedDayIndex !== -1 && selectedDaySlots.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+                  {selectedDaySlots.map((slot, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedTime(slot.time)}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                        selectedTime === slot.time
+                          ? "border-primary bg-primary text-white"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary"
+                      }`}
+                    >
+                      {slot.time.toLowerCase()}
+                    </button>
+                  ))}
+                </div>
+              ) : selectedDayIndex === -1 ? (
+                <p className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-500">
+                  Please select a date to view available slots.
+                </p>
+              ) : selectedDayIndex === 0 && todayMessage ? (
+                <p className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-500">
+                  {todayMessage}
+                </p>
+              ) : (
+                <p className="rounded-lg bg-gray-50 p-4 text-center text-sm text-gray-500">
+                  No available slots.
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="bg-white border border-teal-100 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 mb-2">Selected slot</p>
-            {selectedSlot ? (
-              <div className="space-y-1">
-                <p className="text-lg font-semibold text-gray-800">
-                  {format(new Date(selectedSlot.isoDate), "EEE, dd MMM")}
-                </p>
-                <p className="text-primary font-semibold text-xl">
-                  {selectedSlot.time.toLowerCase()}
-                </p>
-              </div>
-            ) : (
-              <p className="text-gray-600">
-                Pick a date and time to see it here.
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
-          {selectedDayIndex !== -1 &&
-          availableSlots[selectedDayIndex]?.length > 0 ? (
-            availableSlots[selectedDayIndex].map((slot, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedTime(slot.time)}
-                className={`p-3 rounded-md text-sm font-medium transition-all shadow-sm ${
-                  selectedTime === slot.time
-                    ? "bg-primary text-white shadow-md scale-[1.02]"
-                    : "bg-white border border-gray-200 hover:border-primary/60"
-                }`}
-              >
-                {slot.time.toLowerCase()}
-              </button>
-            ))
-          ) : selectedDayIndex === -1 ? (
-            <p className="text-gray-500 col-span-full text-center">
-              Please select a date to view available slots
-            </p>
-          ) : selectedDayIndex === 0 && todayMessage ? (
-            <p className="text-gray-500 col-span-full text-center">
-              {todayMessage}
-            </p>
-          ) : (
-            <p className="text-gray-500 col-span-full text-center">
-              No available slots
-            </p>
+          {!doctor.available && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              This doctor is currently unavailable for booking.
+            </div>
           )}
         </div>
 
-        {/* Booking Action */}
-        <button
-          onClick={handleBooking}
-          disabled={loading || !selectedTime || !doctor.available}
-          className={`mt-8 w-full py-3 rounded-lg font-semibold text-white transition-all ${
-            doctor.available
-              ? loading
-                ? "bg-gray-400"
-                : "bg-primary hover:bg-primary-dark"
-              : "bg-gray-300 cursor-not-allowed"
-          }`}
-        >
-          {doctor.available
-            ? loading
-              ? "Processing..."
-              : "Confirm Appointment"
-            : "Doctor not available for booking"}
-        </button>
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-lg font-semibold text-gray-900">Appointment Summary</h2>
+
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <span className="inline-flex items-center gap-1.5 text-gray-500">
+                  <FiUser className="h-4 w-4" />
+                  Doctor
+                </span>
+                <span className="font-medium text-gray-800">{doctor.name}</span>
+              </div>
+
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <span className="inline-flex items-center gap-1.5 text-gray-500">
+                  <FiBriefcase className="h-4 w-4" />
+                  Speciality
+                </span>
+                <span className="font-medium text-gray-800">{doctor.speciality}</span>
+              </div>
+
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <span className="inline-flex items-center gap-1.5 text-gray-500">
+                  <FiCalendar className="h-4 w-4" />
+                  Date
+                </span>
+                <span className="font-medium text-gray-800">
+                  {selectedSlot
+                    ? format(new Date(selectedSlot.isoDate), "EEE, dd MMM yyyy")
+                    : "Not selected"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <span className="inline-flex items-center gap-1.5 text-gray-500">
+                  <FiClock className="h-4 w-4" />
+                  Time
+                </span>
+                <span className="font-medium text-gray-800">
+                  {selectedSlot ? selectedSlot.time.toLowerCase() : "Not selected"}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl bg-teal-50 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-teal-900">Consultation Fee</span>
+                <span className="text-xl font-bold text-teal-900">
+                  {currencySymbol}
+                  {doctor.fees}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleBooking}
+              disabled={loading || !selectedTime || !doctor.available}
+              className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition ${
+                doctor.available
+                  ? loading
+                    ? "cursor-not-allowed bg-gray-400"
+                    : "bg-primary hover:bg-teal-600"
+                  : "cursor-not-allowed bg-gray-300"
+              }`}
+            >
+              {loading ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <FiCheckCircle className="h-4 w-4" />
+                  {doctor.available ? "Confirm Appointment" : "Doctor not available for booking"}
+                </>
+              )}
+            </button>
+
+            {!selectedTime && (
+              <p className="mt-3 text-center text-xs text-gray-500">
+                Select date and time to continue.
+              </p>
+            )}
+          </div>
+        </aside>
       </section>
 
-      {/* Related Doctors */}
       <RelatedDoctors currentDocId={docId} speciality={doctor.speciality} />
     </div>
   );
