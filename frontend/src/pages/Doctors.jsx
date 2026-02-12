@@ -12,6 +12,7 @@ import {
   FiUser,
   FiUsers,
 } from "react-icons/fi";
+import { FaStar } from "react-icons/fa";
 import { AppContext } from "../context/AppContext";
 import { resolveImageUrl } from "../utils/imageUrl";
 
@@ -259,6 +260,17 @@ const Doctors = () => {
                         {doctor.fees || 120}
                       </span>
                       <span className="text-xs text-gray-500">per consultation</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FaStar className="h-4 w-4 text-amber-400" />
+                      <span className="font-semibold text-gray-800">
+                        {Number(doctor.totalReviews || 0) > 0
+                          ? Number(doctor.averageRating || 0).toFixed(1)
+                          : "New"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({Number(doctor.totalReviews || 0)} reviews)
+                      </span>
                     </div>
                   </div>
 

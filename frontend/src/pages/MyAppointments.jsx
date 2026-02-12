@@ -10,6 +10,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { loadStripe } from "@stripe/stripe-js";
+import { FaRegStar, FaStar } from "react-icons/fa";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -31,6 +32,44 @@ const SummaryCard = ({ label, value, tone }) => {
   );
 };
 
+const RatingStars = ({ value = 0, onChange, readOnly = false }) => {
+  return (
+    <div className="inline-flex items-center gap-1">
+      {Array.from({ length: 5 }, (_, index) => {
+        const starValue = index + 1;
+        const isFilled = starValue <= Number(value || 0);
+        const Icon = isFilled ? FaStar : FaRegStar;
+
+        if (readOnly) {
+          return (
+            <Icon
+              key={starValue}
+              className={`h-4 w-4 ${
+                isFilled ? "text-amber-400" : "text-gray-300"
+              }`}
+            />
+          );
+        }
+
+        return (
+          <button
+            key={starValue}
+            type="button"
+            onClick={() => onChange?.(starValue)}
+            className="transition hover:scale-105"
+          >
+            <Icon
+              className={`h-6 w-6 ${
+                isFilled ? "text-amber-400" : "text-gray-300"
+              }`}
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
 const MyAppointments = () => {
   const { backendurl, token, getDoctorsData, logoutUser, currencySymbol } =
     useContext(AppContext);
@@ -41,6 +80,10 @@ const MyAppointments = () => {
   const [payingId, setPayingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("appointments");
+  const [reviewingAppointmentId, setReviewingAppointmentId] = useState(null);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const months = [
     "Jan",
@@ -198,6 +241,54 @@ const MyAppointments = () => {
       toast.error("Payment couldn't start. Please try again.");
     } finally {
       setPayingId(null);
+    }
+  };
+
+  const openReviewModal = (appointment) => {
+    setReviewingAppointmentId(appointment._id);
+    setRatingValue(appointment.doctorRating || 0);
+    setReviewText(appointment.doctorReview || "");
+  };
+
+  const closeReviewModal = () => {
+    setReviewingAppointmentId(null);
+    setRatingValue(0);
+    setReviewText("");
+  };
+
+  const submitDoctorReview = async () => {
+    if (!reviewingAppointmentId) return;
+
+    if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
+      toast.error("Please select a rating between 1 and 5.");
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const { data } = await axios.post(
+        `${backendurl}/api/user/submit-review`,
+        {
+          appointmentId: reviewingAppointmentId,
+          rating: ratingValue,
+          review: reviewText.trim(),
+        },
+        { headers: { token } }
+      );
+
+      if (data.success) {
+        toast.success("Thanks! Your review has been submitted.");
+        closeReviewModal();
+        await Promise.all([fetchAppointments(), getDoctorsData()]);
+      } else {
+        toast.error(data.message || "Could not submit review.");
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Could not submit review."
+      );
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -409,9 +500,34 @@ const MyAppointments = () => {
                             Appointment Cancelled
                           </button>
                         ) : appointment.isCompleted ? (
-                          <button className="w-full sm:w-full px-4 py-2 bg-teal-600 text-white rounded-md cursor-not-allowed">
-                            Appointment Completed
-                          </button>
+                          <div className="w-full space-y-2">
+                            <button className="w-full sm:w-full px-4 py-2 bg-teal-600 text-white rounded-md cursor-not-allowed">
+                              Appointment Completed
+                            </button>
+                            {appointment.doctorRating ? (
+                              <div className="rounded-md border border-amber-100 bg-amber-50 px-3 py-2">
+                                <p className="text-xs font-medium text-amber-700">
+                                  Your Rating
+                                </p>
+                                <div className="mt-1 flex items-center gap-2">
+                                  <RatingStars
+                                    value={appointment.doctorRating}
+                                    readOnly
+                                  />
+                                  <span className="text-xs font-semibold text-amber-700">
+                                    {appointment.doctorRating}/5
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                className="w-full sm:w-full px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors"
+                                onClick={() => openReviewModal(appointment)}
+                              >
+                                Rate Doctor
+                              </button>
+                            )}
+                          </div>
                         ) : isExpired(
                             appointment.slotDate,
                             appointment.slotTime,
@@ -585,6 +701,63 @@ const MyAppointments = () => {
             </div>
           )}
         </>
+      )}
+
+      {reviewingAppointmentId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl sm:p-6">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Rate Your Doctor
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Rating is required. Review is optional.
+            </p>
+
+            <div className="mt-4">
+              <p className="mb-2 text-sm font-medium text-gray-700">
+                Your Rating
+              </p>
+              <RatingStars value={ratingValue} onChange={setRatingValue} />
+            </div>
+
+            <div className="mt-4">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Your Review (optional)
+              </label>
+              <textarea
+                value={reviewText}
+                onChange={(event) => setReviewText(event.target.value)}
+                maxLength={500}
+                rows={4}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-primary focus:ring-2 focus:ring-teal-100"
+                placeholder="Share your experience with this doctor..."
+              />
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={closeReviewModal}
+                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                disabled={submittingReview}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitDoctorReview}
+                disabled={submittingReview || !ratingValue}
+                className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition ${
+                  submittingReview || !ratingValue
+                    ? "cursor-not-allowed bg-gray-300"
+                    : "bg-primary hover:bg-teal-600"
+                }`}
+              >
+                {submittingReview ? "Submitting..." : "Submit Review"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

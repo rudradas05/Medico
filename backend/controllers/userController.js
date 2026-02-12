@@ -480,6 +480,110 @@ const appointmentsList = async (req, res) => {
   }
 };
 
+const submitDoctorReview = async (req, res) => {
+  try {
+    const { userId, appointmentId, rating, review = "" } = req.body;
+
+    if (!userId || !appointmentId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid request" });
+    }
+
+    const parsedRating = Number(rating);
+    if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be an integer between 1 and 5",
+      });
+    }
+
+    const appointment = await appointmentModel.findById(appointmentId);
+    if (!appointment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Appointment not found" });
+    }
+
+    if (String(appointment.userId) !== String(userId)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized action" });
+    }
+
+    if (appointment.cancelled) {
+      return res.status(400).json({
+        success: false,
+        message: "Cancelled appointments cannot be reviewed",
+      });
+    }
+
+    if (!appointment.isCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: "You can review only completed appointments",
+      });
+    }
+
+    if (appointment.doctorRating) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reviewed this appointment",
+      });
+    }
+
+    appointment.doctorRating = parsedRating;
+    appointment.doctorReview =
+      typeof review === "string" ? review.trim().slice(0, 500) : "";
+    appointment.reviewedAt = Date.now();
+    await appointment.save();
+
+    res.json({ success: true, message: "Review submitted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+const testimonialsList = async (req, res) => {
+  try {
+    const testimonialsData = await appointmentModel
+      .find({
+        isCompleted: true,
+        cancelled: { $ne: true },
+        doctorRating: { $gte: 1, $lte: 5 },
+      })
+      .sort({ reviewedAt: -1, date: -1 })
+      .limit(10)
+      .select("doctorRating doctorReview reviewedAt date userData docData")
+      .lean();
+
+    const testimonials = testimonialsData.map((item) => {
+      const doctorName = item.docData?.name || "Doctor";
+      const fallbackReview = `Rated Dr. ${doctorName} ${item.doctorRating}/5.`;
+
+      return {
+        _id: item._id,
+        rating: item.doctorRating,
+        review:
+          item.doctorReview && item.doctorReview.trim()
+            ? item.doctorReview.trim()
+            : fallbackReview,
+        userName: item.userData?.name || "Verified Patient",
+        userImage: item.userData?.image || "",
+        doctorName,
+        doctorSpeciality: item.docData?.speciality || "",
+        reviewedAt: item.reviewedAt || item.date,
+      };
+    });
+
+    res.json({ success: true, testimonials });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 const cancelAppointment = async (req, res) => {
   try {
     const { userId, appointmentId } = req.body;
@@ -623,6 +727,8 @@ export {
   updateUserData,
   bookAppointment,
   appointmentsList,
+  submitDoctorReview,
+  testimonialsList,
   cancelAppointment,
   createCheckoutSession,
   verifyPayment,

@@ -15,6 +15,7 @@ import {
   FiShield,
   FiUser,
 } from "react-icons/fi";
+import { FaStar } from "react-icons/fa";
 import { AppContext } from "../context/AppContext";
 import RelatedDoctors from "../components/RelatedDoctors";
 import { toast } from "react-toastify";
@@ -42,6 +43,10 @@ const Appointment = () => {
 
   const selectedDaySlots =
     selectedDayIndex !== -1 ? availableSlots[selectedDayIndex] || [] : [];
+  const hasDoctorReviews = Number(doctor?.totalReviews || 0) > 0;
+  const doctorAverageRating = hasDoctorReviews
+    ? Number(doctor?.averageRating || 0).toFixed(1)
+    : "New";
 
   const SLOT_CONFIG = {
     START_HOUR: 10,
@@ -218,6 +223,13 @@ const Appointment = () => {
                 <FiShield className="h-3.5 w-3.5" />
                 Verified Specialist
               </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                <FaStar className="h-3.5 w-3.5 text-amber-400" />
+                {doctorAverageRating}
+                <span className="text-amber-600">
+                  ({Number(doctor?.totalReviews || 0)} reviews)
+                </span>
+              </span>
               <span
                 className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                   doctor.available
@@ -372,6 +384,16 @@ const Appointment = () => {
 
               <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                 <span className="inline-flex items-center gap-1.5 text-gray-500">
+                  <FaStar className="h-4 w-4" />
+                  Rating
+                </span>
+                <span className="font-medium text-gray-800">
+                  {doctorAverageRating} ({Number(doctor?.totalReviews || 0)})
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <span className="inline-flex items-center gap-1.5 text-gray-500">
                   <FiCalendar className="h-4 w-4" />
                   Date
                 </span>
@@ -436,7 +458,7 @@ const Appointment = () => {
         </aside>
       </section>
 
-      <RelatedDoctors currentDocId={docId} speciality={doctor.speciality} />
+      <RelatedDoctors docId={docId} speciality={doctor.speciality} />
     </div>
   );
 };

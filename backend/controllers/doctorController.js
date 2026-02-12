@@ -3,6 +3,46 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import appointmentModel from "../models/appointmentModel.js";
 
+const attachRatingsToDoctors = async (doctors) => {
+  if (!doctors?.length) return [];
+
+  const ratingStats = await appointmentModel.aggregate([
+    {
+      $match: {
+        isCompleted: true,
+        cancelled: { $ne: true },
+        doctorRating: { $gte: 1, $lte: 5 },
+      },
+    },
+    {
+      $group: {
+        _id: "$docId",
+        averageRating: { $avg: "$doctorRating" },
+        totalReviews: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const statsMap = new Map(
+    ratingStats.map((item) => [
+      String(item._id),
+      {
+        averageRating: Number(item.averageRating.toFixed(1)),
+        totalReviews: item.totalReviews,
+      },
+    ])
+  );
+
+  return doctors.map((doctor) => {
+    const rating = statsMap.get(String(doctor._id));
+    return {
+      ...doctor,
+      averageRating: rating?.averageRating || 0,
+      totalReviews: rating?.totalReviews || 0,
+    };
+  });
+};
+
 const changeAvailability = async (req, res) => {
   try {
     const { docId } = req.body;
@@ -36,14 +76,20 @@ const changeAvailability = async (req, res) => {
 
 const allDoctorsList = async (req, res) => {
   try {
-    const doctors = await doctorModel.find({}).select(["-password", "-email"]);
+    const doctors = await doctorModel
+      .find({})
+      .select(["-password", "-email"])
+      .lean();
+    const doctorsWithRatings = await attachRatingsToDoctors(doctors);
+
     res.json({
       success: true,
       message: "Doctors fetched successfully",
-      doctors,
+      doctors: doctorsWithRatings,
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

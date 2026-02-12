@@ -11,6 +11,8 @@ import {
   verifyEmail,
   bookAppointment,
   appointmentsList,
+  submitDoctorReview,
+  testimonialsList,
   cancelAppointment,
   createCheckoutSession,
   verifyPayment,
@@ -38,7 +40,9 @@ userRouter.post(
 
 userRouter.post("/book-appointment", authUser, bookAppointment);
 userRouter.get("/appointment", authUser, appointmentsList);
+userRouter.post("/submit-review", authUser, submitDoctorReview);
 userRouter.post("/cancel-appointment", authUser, cancelAppointment);
+userRouter.get("/testimonials", testimonialsList);
 
 userRouter.post("/create-checkout-session", authUser, createCheckoutSession);
 

@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiArrowRight, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import { FaStar } from "react-icons/fa";
 import { AppContext } from "../context/AppContext";
 import { resolveImageUrl } from "../utils/imageUrl";
 
@@ -76,6 +77,15 @@ const TopDoctors = () => {
                     {doctor.name}
                   </h3>
                   <p className="text-sm text-teal-700">{doctor.speciality}</p>
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                    <FaStar className="h-3.5 w-3.5 text-amber-400" />
+                    {Number(doctor.totalReviews || 0) > 0
+                      ? Number(doctor.averageRating || 0).toFixed(1)
+                      : "New"}
+                    <span className="text-amber-600">
+                      ({Number(doctor.totalReviews || 0)})
+                    </span>
+                  </div>
                 </div>
               </article>
             ))}
