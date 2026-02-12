@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
-import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
+import { FiArrowRight, FiShield } from "react-icons/fi";
+import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
 
 const Banner = () => {
@@ -8,34 +9,44 @@ const Banner = () => {
   const { isLoggedin } = useContext(AppContext);
 
   return (
-    <div className="flex flex-col lg:flex-row bg-gradient-to-r from-blue-600 via-teal-500 to-indigo-600 rounded-2xl px-8 py-16 md:px-12 my-16 shadow-2xl transform hover:scale-101 transition-transform duration-300 ease-in-out">
-      <div className="flex-1 text-center lg:text-left space-y-6 lg:pr-8">
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight animate-fadeIn">
-          Book Your Appointment <br />
-          with Trusted Doctors
-        </h1>
+    <section className="relative mt-10 overflow-hidden rounded-3xl bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-500 px-6 py-10 text-white shadow-[0_18px_44px_rgba(20,184,166,0.24)] sm:px-8 lg:px-12">
+      <div className="absolute -left-8 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute -bottom-14 right-0 h-52 w-52 rounded-full bg-emerald-300/20 blur-2xl" />
 
-        <p className="text-lg sm:text-xl text-gray-100 animate-fadeIn delay-100">
-          Browse through our list of 100+ verified doctors and book your
-          appointment hassle-free.
-        </p>
+      <div className="relative mx-auto flex max-w-6xl flex-col gap-8 lg:flex-row lg:items-center">
+        <div className="lg:w-2/3">
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-teal-50">
+            <FiShield className="h-3.5 w-3.5" />
+            Seamless Appointment Flow
+          </p>
 
-        <button
-          onClick={() => navigate(isLoggedin ? "/doctors" : "/login")}
-          className="bg-white text-sm sm:text-base text-gray-800 font-semibold px-8 py-3 rounded-full mt-6 hover:bg-gray-100 hover:shadow-lg transition-all duration-300 animate-fadeIn delay-200"
-        >
-          {isLoggedin ? "Book Appointment" : "Create Account"}
-        </button>
+          <h2 className="mt-3 text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
+            Book Your Appointment with Trusted Doctors
+          </h2>
+
+          <p className="mt-3 max-w-2xl text-sm text-teal-50 sm:text-base">
+            Access verified profiles, compare expertise, and secure your slot in
+            less than a minute.
+          </p>
+
+          <button
+            onClick={() => navigate(isLoggedin ? "/doctors" : "/login")}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
+          >
+            {isLoggedin ? "Book Appointment" : "Create Account"}
+            <FiArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="premium-glass lg:w-1/3 rounded-2xl p-3">
+          <img
+            className="h-full w-full rounded-xl object-cover"
+            src={assets.appointment_img}
+            alt="Doctor Appointment"
+          />
+        </div>
       </div>
-
-      <div className="mt-12 lg:mt-0 lg:w-1/3 relative flex justify-center lg:justify-end animate-fadeInRight">
-        <img
-          className="w-full max-w-md lg:max-w-lg object-cover rounded-xl shadow-2xl border-4 border-white transform hover:scale-105 transition-transform duration-300 ease-in-out"
-          src={assets.appointment_img}
-          alt="Doctor Appointment"
-        />
-      </div>
-    </div>
+    </section>
   );
 };
 

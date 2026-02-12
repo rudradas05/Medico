@@ -263,7 +263,7 @@ const MyAppointments = () => {
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-5xl mx-auto p-4">
+    <div className="max-w-5xl mx-auto p-4 pt-6">
       <h2 className="text-2xl font-semibold mb-4 border-b pb-3">
         My Appointments
       </h2>
@@ -427,7 +427,7 @@ const MyAppointments = () => {
                               </button>
                             ) : (
                               <button
-                                className="w-full sm:w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                className="w-full sm:w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-teal-600 transition-colors disabled:opacity-50"
                                 onClick={() =>
                                   appoinmentStripepay(appointment._id)
                                 }
@@ -558,7 +558,7 @@ const MyAppointments = () => {
                           {!booking.payment &&
                             booking.paymentMethod === "online" && (
                               <button
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 text-sm"
+                                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-teal-600 transition-colors disabled:opacity-50 text-sm"
                                 onClick={() => payServiceBooking(booking._id)}
                                 disabled={payingId === booking._id}
                               >

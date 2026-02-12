@@ -1,19 +1,33 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { assets } from "../assets/assets";
 import { NavLink, useNavigate } from "react-router-dom";
-import { CiMenuBurger } from "react-icons/ci";
-import { IoCloseCircleOutline } from "react-icons/io5";
+import {
+  FiCalendar,
+  FiChevronDown,
+  FiLogOut,
+  FiMenu,
+  FiUser,
+  FiX,
+} from "react-icons/fi";
 import { AppContext } from "../context/AppContext";
-import { RiLoginCircleFill } from "react-icons/ri";
+import { assets } from "../assets/assets";
+import { resolveImageUrl } from "../utils/imageUrl";
+
+const navItems = [
+  { label: "Home", path: "/" },
+  { label: "Doctors", path: "/doctors" },
+  { label: "Services", path: "/services" },
+  { label: "About", path: "/about" },
+  { label: "Contact", path: "/contact" },
+];
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const [showMenu, setShowMenu] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  const { token, setToken, userData, setIsLoggedin, logoutUser } =
-    useContext(AppContext);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const { token, userData, backendurl, logoutUser } = useContext(AppContext);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -22,232 +36,173 @@ const Navbar = () => {
       }
     };
 
-    if (showDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showDropdown]);
+  }, []);
+
+  const handleNavigate = (path) => {
+    navigate(path);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
-    <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-teal-500 z-50 shadow-lg">
-      <div className="grid grid-cols-[auto_1fr_auto] gap-2 px-4 py-4 max-w-screen-xl mx-auto items-center">
-        <img
-          onClick={() => {
-            navigate("/");
-            scrollTo(0, 0);
-          }}
-          className="h-10 cursor-pointer hover:opacity-80 transition-opacity"
-          src={assets.logo}
-          alt="logo"
-        />
+    <header className="sticky top-0 z-50 pt-4">
+      <div className="rounded-2xl border border-teal-100 bg-white/95 px-4 py-3 shadow-[0_10px_28px_rgba(15,118,110,0.10)] backdrop-blur-sm sm:px-5">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+          <button
+            type="button"
+            onClick={() => handleNavigate("/")}
+            className="rounded-xl border border-white/20 bg-slate-900/80 px-3 py-1.5 transition hover:bg-slate-900"
+            aria-label="Go to home"
+          >
+            <img className="h-8 w-auto" src={assets.logo} alt="Medico" />
+          </button>
 
-        <ul className="hidden md:flex items-center justify-center gap-10 text-white font-medium text-lg">
-          <NavLink
-            to="/"
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            Home
-          </NavLink>
-          <NavLink
-            to="/doctors"
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            Find a Doctor
-          </NavLink>
-          <NavLink
-            to="/about"
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            About
-          </NavLink>
-          <NavLink
-            to="/services"
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            Services
-          </NavLink>
-          <NavLink
-            to="/contact"
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            Contact
-          </NavLink>
-        </ul>
-
-        <div className="flex items-center gap-6 justify-end">
-          {token && userData ? (
-            <div className="relative" ref={dropdownRef}>
-              <img
-                className="w-10 h-10 rounded-full cursor-pointer ring-2 ring-white hover:ring-teal-200 transition-all"
-                src={userData.image}
-                alt="User"
-                onClick={() => setShowDropdown(!showDropdown)}
-              />
-              <div
-                className={`absolute top-14 right-0 bg-white shadow-lg rounded-lg py-2 w-48 ${
-                  showDropdown ? "block" : "hidden"
-                } transition-opacity duration-200`}
+          <nav className="hidden items-center justify-center gap-2 lg:flex">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `rounded-full px-4 py-2 text-sm font-medium transition ${
+                    isActive
+                      ? "bg-teal-100 text-teal-800"
+                      : "text-gray-600 hover:bg-teal-50 hover:text-teal-700"
+                  }`
+                }
               >
-                <p
-                  onClick={() => {
-                    navigate("/my-profile");
-                    setShowDropdown(false);
-                  }}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
+            {token && userData ? (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowDropdown((prev) => !prev)}
+                  className="inline-flex items-center gap-2 rounded-full border border-teal-100 bg-teal-50/70 px-2 py-1.5 text-sm font-medium text-teal-800 transition hover:bg-teal-100"
                 >
-                  My Profile
-                </p>
-                <p
-                  onClick={() => {
-                    navigate("/my-appointments");
-                    setShowDropdown(false);
-                  }}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
-                >
-                  My Appointments
-                </p>
-                <p
-                  onClick={() => {
-                    logoutUser();
-                    setShowDropdown(false);
-                  }}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
-                >
-                  Logout
-                </p>
+                  <img
+                    className="h-8 w-8 rounded-full object-cover"
+                    src={resolveImageUrl(userData.image, backendurl)}
+                    alt={userData.name || "Profile"}
+                  />
+                  <FiChevronDown className="hidden h-4 w-4 sm:block" />
+                </button>
+
+                {showDropdown && (
+                  <div className="absolute right-0 mt-2 w-52 rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        handleNavigate("/my-profile");
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-teal-50"
+                    >
+                      <FiUser className="h-4 w-4 text-teal-600" />
+                      My Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        handleNavigate("/my-appointments");
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-teal-50"
+                    >
+                      <FiCalendar className="h-4 w-4 text-teal-600" />
+                      My Appointments
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDropdown(false);
+                        logoutUser();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50"
+                    >
+                      <FiLogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
+            ) : (
               <button
-                onClick={() => navigate("/login")}
-                className="mr-1 hidden md:block bg-teal-600 text-white px-5 py-2 rounded-full hover:bg-teal-700 transition-colors duration-200 font-medium"
+                onClick={() => handleNavigate("/login")}
+                className="hidden rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-600 sm:inline-flex"
               >
                 Create Account
               </button>
+            )}
 
-              <RiLoginCircleFill
-                onClick={() => navigate("/login")}
-                className="mr-1 block md:hidden text-3xl text-white cursor-pointer hover:text-teal-200 transition-colors"
-              />
-            </div>
-          )}
+            <button
+              onClick={() => setShowMenu(true)}
+              className="rounded-lg p-2 text-gray-700 transition hover:bg-teal-50 lg:hidden"
+              aria-label="Open menu"
+            >
+              <FiMenu className="h-6 w-6" />
+            </button>
+          </div>
         </div>
-        <CiMenuBurger
-          onClick={() => setShowMenu(true)}
-          className="text-3xl cursor-pointer md:hidden text-white hover:text-teal-200  transition-colors mr"
-        />
       </div>
 
-      {/* Mobile Menu */}
       <div
-        className={`fixed  inset-0 bg-teal-700/95 backdrop-blur-sm z-40 transform ${
-          showMenu ? "translate-x-0" : "translate-x-full"
-        } transition-transform ease-in-out duration-300`}
+        className={`fixed inset-0 z-50 bg-slate-900/45 transition ${
+          showMenu ? "visible opacity-100" : "invisible opacity-0"
+        } lg:hidden`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-teal-500">
-          <img className="w-32" src={assets.logo} alt="Logo" />
-          <IoCloseCircleOutline
-            onClick={() => setShowMenu(false)}
-            className="text-3xl text-white cursor-pointer hover:text-teal-200 transition-colors"
-          />
-        </div>
-        <ul className="flex flex-col items-center gap-6 mt-8 text-lg font-medium text-white">
-          <NavLink
-            to="/"
-            onClick={() => setShowMenu(false)}
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            Home
-          </NavLink>
-          <NavLink
-            to="/doctors"
-            onClick={() => setShowMenu(false)}
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            Find a Doctor
-          </NavLink>
-          <NavLink
-            to="/about"
-            onClick={() => setShowMenu(false)}
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            About
-          </NavLink>
-          <NavLink
-            to="/services"
-            onClick={() => setShowMenu(false)}
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            Services
-          </NavLink>
-          <NavLink
-            to="/contact"
-            onClick={() => setShowMenu(false)}
-            className={({ isActive }) =>
-              `hover:text-teal-200 transition-colors duration-200 ${
-                isActive ? "text-teal-200 font-semibold" : ""
-              }`
-            }
-          >
-            Contact
-          </NavLink>
+        <aside
+          className={`absolute right-0 top-0 h-full w-72 bg-white p-4 shadow-2xl transition-transform ${
+            showMenu ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <div className="mb-6 flex items-center justify-between">
+            <div className="rounded-xl border border-white/20 bg-slate-900/80 px-3 py-1.5">
+              <img className="h-8 w-auto" src={assets.logo} alt="Medico" />
+            </div>
+            <button
+              onClick={() => setShowMenu(false)}
+              className="rounded-lg p-2 text-gray-700 hover:bg-teal-50"
+            >
+              <FiX className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setShowMenu(false)}
+                className={({ isActive }) =>
+                  `block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                    isActive
+                      ? "bg-teal-100 text-teal-800"
+                      : "text-gray-700 hover:bg-teal-50"
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
 
           {!token && (
             <button
               onClick={() => {
-                navigate("/login");
                 setShowMenu(false);
+                handleNavigate("/login");
               }}
-              className="bg-blue-600 text-white px-6 py-3 rounded-full mt-4 hover:bg-blue-700 transition-colors duration-200 font-medium"
+              className="mt-6 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white"
             >
               Create Account
             </button>
           )}
-        </ul>
+        </aside>
       </div>
-    </div>
+    </header>
   );
 };
 

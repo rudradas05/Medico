@@ -1,75 +1,82 @@
 import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { FiArrowRight, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import { AppContext } from "../context/AppContext";
+import { resolveImageUrl } from "../utils/imageUrl";
 
 const TopDoctors = () => {
   const navigate = useNavigate();
-  const { doctors } = useContext(AppContext);
+  const { doctors, backendurl } = useContext(AppContext);
 
   return (
-    <div className="flex flex-col items-center gap-8 py-16 bg-gradient-to-b from-white to-blue-50">
-      <div className="text-center max-w-3xl px-4 space-y-4">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-800 font-poppins">
-          Our Leading Medical Experts
-        </h1>
-        <p className="text-gray-600 text-lg md:text-xl">
-          Connect with top-rated specialists dedicated to your health and
-          wellness
-        </p>
-      </div>
+    <section className="mt-10 rounded-3xl bg-gradient-to-br from-white via-teal-50 to-emerald-100/60 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="inline-flex rounded-full bg-teal-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-teal-700">
+              Featured Team
+            </p>
+            <h2 className="mt-3 text-3xl font-bold text-gray-900 sm:text-4xl">
+              Our Leading Medical Experts
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-gray-600 sm:text-base">
+              Meet trusted specialists ready to support your health journey.
+            </p>
+          </div>
 
-      <div className="w-full max-w-screen-xl px-4 lg:px-8">
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <button
+            onClick={() => {
+              navigate("/doctors");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
+          >
+            View All Doctors
+            <FiArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {doctors.slice(0, 8).map((doctor) => (
-            <div
+            <article
               key={doctor._id}
               onClick={() => navigate(`/appointment/${doctor._id}`)}
-              className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+              className="premium-panel group cursor-pointer overflow-hidden rounded-2xl transition duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
-              <div className="relative h-60 overflow-hidden">
-                <img
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  src={doctor.image}
-                  alt={doctor.name}
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/30 to-transparent" />
+              <div className="relative h-52 overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 p-3">
+                <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-white/70">
+                  <img
+                    className="h-full w-full object-contain transition duration-500 group-hover:scale-105"
+                    src={resolveImageUrl(doctor.image, backendurl)}
+                    alt={doctor.name}
+                    loading="lazy"
+                  />
+                </div>
               </div>
 
-              <div className="p-5 space-y-3">
-                <div className="flex items-center gap-2">
+              <div className="p-4">
+                <div className="mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide">
                   {doctor.available ? (
-                    <span className="text-green-600 font-medium">
-                      ✅ Available
-                    </span>
+                    <>
+                      <FiCheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">Available</span>
+                    </>
                   ) : (
-                    <span className="text-red-600 font-medium">
-                      ❌ Unavailable
-                    </span>
+                    <>
+                      <FiXCircle className="h-3.5 w-3.5 text-red-600" />
+                      <span className="text-red-700">Unavailable</span>
+                    </>
                   )}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800">
-                  {doctor.name}
-                </h3>
-                <p className="text-gray-600 text-sm">{doctor.speciality}</p>
-              </div>
 
-              <div className="absolute inset-0 border-2 border-transparent group-hover:border-teal-400 rounded-2xl transition-all duration-300 pointer-events-none" />
-            </div>
+                <h3 className="text-lg font-semibold text-gray-900">{doctor.name}</h3>
+                <p className="text-sm text-teal-700">{doctor.speciality}</p>
+              </div>
+            </article>
           ))}
         </div>
       </div>
-
-      <button
-        onClick={() => {
-          navigate("/doctors");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
-        className="mt-8 px-8 py-3 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-full font-semibold hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-      >
-        VIEW ALL DOCTORS
-      </button>
-    </div>
+    </section>
   );
 };
 

@@ -1,54 +1,54 @@
 import React from "react";
-import { specialityData } from "../assets/assets";
 import { Link } from "react-router-dom";
+import { FiArrowUpRight } from "react-icons/fi";
+import { specialityData } from "../assets/assets";
 
 const SpecialityMenu = () => {
   return (
-    <div
-      className="flex flex-col items-center gap-6 py-16 bg-gradient-to-br from-blue-50 to-teal-50"
+    <section
       id="speciality"
+      className="mt-10 rounded-3xl bg-gradient-to-br from-teal-50 via-white to-emerald-50 px-4 py-12 sm:px-6 lg:px-8"
     >
-      <div className="text-center space-y-4 max-w-3xl px-4">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-800 font-poppins">
-          Find by Medical Speciality
-        </h1>
-        <p className="text-gray-600 text-lg md:text-xl leading-relaxed">
-          Connect with board-certified specialists across{" "}
-          {specialityData.length}+ medical fields. Your journey to better health
-          starts here.
-        </p>
-      </div>
+      <div className="mx-auto max-w-6xl">
+        <div className="text-center">
+          <p className="inline-flex rounded-full bg-teal-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-teal-700">
+            Browse Expertise
+          </p>
+          <h2 className="mt-3 text-3xl font-bold text-gray-900 sm:text-4xl">
+            Find by Medical Speciality
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-600 sm:text-base">
+            Choose from {specialityData.length}+ medical specialities and connect
+            with experienced doctors quickly.
+          </p>
+        </div>
 
-      <div className="w-full px-4 lg:px-8">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-          {specialityData.map((item, index) => (
+        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          {specialityData.map((item) => (
             <Link
-              key={index}
+              key={item.speciality}
               to={`/doctors/${item.speciality}`}
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="group relative block overflow-hidden rounded-xl bg-white shadow-md hover:shadow-xl transition-all duration-300 ease-out hover:-translate-y-1"
+              className="premium-panel group relative overflow-hidden rounded-2xl p-4 transition duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
-              <div className="p-4 md:p-6 flex flex-col items-center">
-                <div className="mb-4 w-20 h-20 md:w-24 md:h-24 rounded-full bg-teal-50 flex items-center justify-center group-hover:bg-teal-100 transition-colors">
-                  <img
-                    className="w-12 h-12 md:w-16 md:h-16 object-contain transition-transform group-hover:scale-110"
-                    src={item.image}
-                    alt={item.speciality}
-                    loading="lazy"
-                  />
-                </div>
-
-                <h3 className="text-center text-sm md:text-base font-semibold text-gray-800 group-hover:text-teal-600 transition-colors">
-                  {item.speciality}
-                </h3>
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 transition group-hover:bg-teal-100">
+                <img
+                  className="h-10 w-10 object-contain"
+                  src={item.image}
+                  alt={item.speciality}
+                  loading="lazy"
+                />
               </div>
+              <p className="mt-3 text-center text-xs font-semibold text-gray-700 sm:text-sm">
+                {item.speciality}
+              </p>
 
-              <div className="absolute inset-0 bg-gradient-to-t from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <FiArrowUpRight className="absolute right-3 top-3 h-4 w-4 text-teal-300 opacity-0 transition group-hover:opacity-100" />
             </Link>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

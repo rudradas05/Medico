@@ -1,58 +1,63 @@
 import React from "react";
-import { FaCheck } from "react-icons/fa";
+import { FiCheckCircle, FiClock, FiShield, FiUsers } from "react-icons/fi";
+
+const features = [
+  {
+    title: "Consult Experts Anytime",
+    description:
+      "Connect with verified specialists quickly and choose doctors based on your needs.",
+    Icon: FiUsers,
+  },
+  {
+    title: "Fast and Convenient",
+    description:
+      "Book instantly or schedule in advance with flexible and patient-friendly slots.",
+    Icon: FiClock,
+  },
+  {
+    title: "Private and Secure",
+    description:
+      "Your consultations and health details stay protected with secure workflows.",
+    Icon: FiShield,
+  },
+  {
+    title: "High Quality Guidance",
+    description:
+      "Receive personalized advice and practical next steps from qualified doctors.",
+    Icon: FiCheckCircle,
+  },
+];
 
 const Feature = () => {
   return (
-    <section className="bg-gradient-to-r from-teal-500 to-teal-700 py-16 px-6 sm:px-10 md:px-12 rounded-lg my-12">
-      <div className="text-center text-white mb-12">
-        <h1 className="text-3xl sm:text-4xl font-bold">
-          Advantages of Telehealth
-        </h1>
-        <p className="text-lg sm:text-xl mt-4 max-w-3xl mx-auto">
-          Experience the convenience and reliability of telehealth services from
-          the comfort of your home. Here are some benefits that make telehealth
-          the ideal solution for modern healthcare.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-        <div className="bg-white p-8 rounded-xl shadow-xl flex flex-col items-start transition-transform transform hover:scale-105 hover:shadow-2xl animate-fadeInUp">
-          <div className="w-12 h-12 bg-teal-500 text-white flex items-center justify-center rounded-full mb-4">
-            <FaCheck className="text-2xl" />
-          </div>
-          <h2 className="text-lg sm:text-xl font-semibold text-teal-700 mb-3">
-            Consult Leading Experts Anytime
+    <section className="mt-10 rounded-3xl bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-500 px-4 py-12 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="max-w-3xl">
+          <p className="inline-flex rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-teal-50">
+            Telehealth Benefits
+          </p>
+          <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
+            Advantages of Modern Telehealth
           </h2>
-          <p className="text-sm sm:text-base text-gray-600">
-            Connect instantly with a 24x7 specialist or choose to consult with a
-            particular doctor based on your needs.
+          <p className="mt-3 text-sm text-teal-50 sm:text-base">
+            Experience reliable healthcare access with minimal waiting and
+            strong continuity of care.
           </p>
         </div>
 
-        <div className="bg-white p-8 rounded-xl shadow-xl flex flex-col items-start transition-transform transform hover:scale-105 hover:shadow-2xl animate-fadeInUp delay-100">
-          <div className="w-12 h-12 bg-teal-500 text-white flex items-center justify-center rounded-full mb-4">
-            <FaCheck className="text-2xl" />
-          </div>
-          <h2 className="text-lg sm:text-xl font-semibold text-teal-700 mb-3">
-            Convenient and Easy
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600">
-            Start an instant consultation within 2 minutes or schedule a
-            consultation at your convenience.
-          </p>
-        </div>
-
-        <div className="bg-white p-8 rounded-xl shadow-xl flex flex-col items-start transition-transform transform hover:scale-105 hover:shadow-2xl animate-fadeInUp delay-200">
-          <div className="w-12 h-12 bg-teal-500 text-white flex items-center justify-center rounded-full mb-4">
-            <FaCheck className="text-2xl" />
-          </div>
-          <h2 className="text-lg sm:text-xl font-semibold text-teal-700 mb-3">
-            100% Safe Consultations
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600">
-            Rest assured that your consultation will be completely private and
-            secure, maintaining your confidentiality.
-          </p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature) => (
+            <article
+              key={feature.title}
+              className="premium-glass rounded-2xl p-5"
+            >
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white">
+                <feature.Icon className="h-5 w-5" />
+              </div>
+              <h3 className="mt-3 text-lg font-semibold">{feature.title}</h3>
+              <p className="mt-2 text-sm text-teal-50">{feature.description}</p>
+            </article>
+          ))}
         </div>
       </div>
     </section>

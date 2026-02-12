@@ -89,7 +89,7 @@ const MyProfile = () => {
           className="relative mb-6 group"
         >
           <div className="relative mb-6 group">
-            <div className="relative rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 p-1.5 shadow-inner">
+            <div className="relative rounded-full bg-gradient-to-br from-teal-100 to-emerald-100 p-1.5 shadow-inner">
               <div className="relative rounded-full overflow-hidden border-4 border-white">
                 <img
                   className={`w-32 h-32 object-cover transition-all duration-300 ${
@@ -126,13 +126,13 @@ const MyProfile = () => {
               <input
                 type="text"
                 value={userData.name}
-                className="text-3xl font-bold text-center bg-transparent border-b-2 border-gray-300 focus:border-indigo-500 focus:outline-none pb-2 mt-4 px-4 transition-all duration-300"
+                className="text-3xl font-bold text-center bg-transparent border-b-2 border-gray-300 focus:border-primary focus:outline-none pb-2 mt-4 px-4 transition-all duration-300"
                 onChange={(e) =>
                   setUserData((prev) => ({ ...prev, name: e.target.value }))
                 }
               />
             ) : (
-              <h2 className="text-3xl font-bold text-gray-900 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h2 className="text-3xl font-bold text-gray-900 bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
                 {userData.name}
               </h2>
             )}
@@ -305,10 +305,10 @@ const Section = ({ title, children, icon }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-gradient-to-b from-white to-indigo-50 p-6 rounded-2xl shadow-sm border border-gray-100"
+    className="bg-gradient-to-b from-white to-teal-50 p-6 rounded-2xl shadow-sm border border-gray-100"
   >
     <div className="flex items-center gap-3 mb-5">
-      <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">{icon}</div>
+      <div className="p-2 bg-teal-100 rounded-lg text-teal-700">{icon}</div>
       <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
     </div>
     <div className="space-y-5">{children}</div>
@@ -323,7 +323,7 @@ const InfoRow = ({ label, value, isEmail, icon }) => (
       {isEmail ? (
         <a
           href={`mailto:${value}`}
-          className="text-indigo-600 text-sm font-medium hover:text-indigo-700"
+          className="text-teal-700 text-sm font-medium hover:text-teal-800"
         >
           {value}
         </a>
@@ -346,7 +346,7 @@ const EditableInfo = ({ label, value, isEdit, onChange, icon }) => (
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-48 px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+          className="w-48 px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-primary shadow-sm"
         />
       ) : (
         <span className="text-gray-700 text-sm font-medium">
@@ -364,7 +364,7 @@ const EditableInfo = ({ label, value, isEdit, onChange, icon }) => (
 //       <select
 //         value={value}
 //         onChange={(e) => onChange(e.target.value)}
-//         className="w-48 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+//         className="w-48 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-primary"
 //       >
 //         {options.map((option) => (
 //           <option key={option} value={option}>
@@ -385,7 +385,7 @@ const EditableSelect = ({ label, value, options, isEdit, onChange }) => (
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-48 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        className="w-48 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-primary"
       >
         <option value="" disabled>
           Not Selected
@@ -410,7 +410,7 @@ const EditableDate = ({ label, value, isEdit, onChange }) => (
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-48 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        className="w-48 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-primary"
       />
     ) : (
       <span className="text-gray-700 text-sm">
@@ -435,7 +435,7 @@ const AllergiesInput = ({ userData, setUserData, isEdit }) => (
               allergies: value === "No" ? "None" : prev.allergies,
             }));
           }}
-          className="px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-primary"
         >
           <option value="" disabled>
             Not Selected
@@ -454,7 +454,7 @@ const AllergiesInput = ({ userData, setUserData, isEdit }) => (
                 allergies: e.target.value,
               }))
             }
-            className="px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-primary"
           />
         )}
       </div>
@@ -474,7 +474,7 @@ const EditableTextarea = ({ label, value, isEdit, onChange }) => (
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
-        className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-primary"
       />
     ) : (
       <span className="text-gray-700 text-sm">{value || "Nill"}</span>
@@ -487,7 +487,7 @@ const Button = ({ children, onClick, variant = "primary", isLoading }) => {
     "px-5 py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center gap-2";
   const variants = {
     primary:
-      "bg-gradient-to-br from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-indigo-200",
+      "bg-gradient-to-br from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700 shadow-lg hover:shadow-teal-200",
     secondary:
       "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-700",
   };
@@ -504,3 +504,4 @@ const Button = ({ children, onClick, variant = "primary", isLoading }) => {
 };
 
 export default MyProfile;
+

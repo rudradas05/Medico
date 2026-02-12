@@ -1,66 +1,88 @@
 import React from "react";
-import { assets } from "../assets/assets";
 import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
+import { FiActivity, FiArrowRight, FiShield } from "react-icons/fi";
+import { assets } from "../assets/assets";
 
 const Header = () => {
   return (
-    <div className="relative bg-gradient-to-r from-blue-600 to-teal-500 py-20 px-6 md:px-16 lg:px-24 text-white overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/50 to-teal-500/50"></div>
+    <section className="relative mt-4 overflow-hidden rounded-[30px] bg-gradient-to-br from-teal-800 via-teal-700 to-emerald-500 px-6 py-10 text-white shadow-[0_22px_50px_rgba(20,184,166,0.28)] sm:px-8 lg:px-12 lg:py-14">
+      <div className="absolute -left-16 -top-16 h-52 w-52 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute -bottom-20 right-0 h-64 w-64 rounded-full bg-emerald-300/20 blur-2xl" />
 
-      <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center justify-between relative z-10">
+      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-10 lg:flex-row lg:items-stretch lg:gap-12">
         <motion.div
-          className="md:w-1/2 text-center md:text-left space-y-6"
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full lg:w-[52%]"
         >
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight font-poppins">
-            Book Your Appointment with Trusted Doctors
-          </h1>
-          <p className="text-lg md:text-xl font-light text-gray-100">
-            Access a wide range of healthcare specialists, book appointments
-            effortlessly, and take control of your health.
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-teal-50">
+            <FiShield className="h-3.5 w-3.5" />
+            Premium Healthcare Access
           </p>
-          <NavLink
-            to="/doctors"
-            aria-label="Book an appointment with a doctor"
-            className="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white py-3 px-8 rounded-lg shadow-md text-lg font-semibold transform transition-all duration-300 ease-in-out hover:scale-105 group"
-          >
-            Book Appointment
-            {assets.arrow_icon && (
-              <motion.img
-                className="w-4 ml-2 transition-transform duration-300 ease-in-out group-hover:translate-x-2"
-                src={assets.arrow_icon}
-                alt="Arrow Icon"
-                whileHover={{ x: 5 }}
-                onError={(e) => (e.target.style.display = "none")}
-              />
-            )}
-          </NavLink>
+
+          <h1 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl">
+            Book Expert Doctors With
+            <span className="block text-teal-100">Confidence and Speed</span>
+          </h1>
+
+          <p className="mt-4 max-w-xl text-sm leading-6 text-teal-50 sm:text-base">
+            Connect with verified specialists, choose the most convenient slots,
+            and manage your care journey from one elegant dashboard.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <NavLink
+              to="/doctors"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-teal-800 shadow-md transition hover:bg-teal-50"
+            >
+              Book Appointment
+              <FiArrowRight className="h-4 w-4" />
+            </NavLink>
+            <NavLink
+              to="/services"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/45 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20"
+            >
+              Explore Services
+              <FiActivity className="h-4 w-4" />
+            </NavLink>
+          </div>
+
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            <div className="premium-glass rounded-xl p-3">
+              <p className="text-[11px] uppercase tracking-wide text-teal-100">Doctors</p>
+              <p className="mt-1 text-xl font-bold">100+</p>
+            </div>
+            <div className="premium-glass rounded-xl p-3">
+              <p className="text-[11px] uppercase tracking-wide text-teal-100">Specialities</p>
+              <p className="mt-1 text-xl font-bold">25+</p>
+            </div>
+            <div className="premium-glass rounded-xl p-3">
+              <p className="text-[11px] uppercase tracking-wide text-teal-100">Support</p>
+              <p className="mt-1 text-xl font-bold">24x7</p>
+            </div>
+          </div>
         </motion.div>
 
         <motion.div
-          className="md:w-1/2 mt-12 md:mt-0 relative group"
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+          className="relative w-full overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-3 shadow-2xl lg:w-[48%]"
         >
-          {assets.header_img ? (
-            <motion.img
-              className="w-full h-auto rounded-lg  object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
-              src={assets.header_img}
-              alt="Healthcare Illustration"
-              onError={(e) => (e.target.style.display = "none")}
-            />
-          ) : (
-            <div className="w-full h-64 bg-gray-300 rounded-lg flex items-center justify-center">
-              <span className="text-gray-700">Image Not Available</span>
-            </div>
-          )}
+          <div className="absolute -top-8 right-4 h-24 w-24 rounded-full bg-white/30 blur-2xl" />
+          <img
+            className="h-full w-full rounded-xl object-cover"
+            src={assets.header_img}
+            alt="Healthcare Illustration"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
         </motion.div>
       </div>
-    </div>
+    </section>
   );
 };
 

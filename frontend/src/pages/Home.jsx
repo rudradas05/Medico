@@ -9,7 +9,7 @@ import BookConsultation from "../components/BookConsultation";
 
 const Home = () => {
   return (
-    <div>
+    <div className="pb-6">
       <Header />
       <SpecialityMenu />
       <TopDoctors />

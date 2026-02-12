@@ -1,122 +1,86 @@
 import React from "react";
-import {
-  FaFacebookF,
-  FaTwitter,
-  FaInstagram,
-  FaLinkedinIn,
-  FaPaperPlane,
-} from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { FiFacebook, FiInstagram, FiLinkedin, FiSend, FiTwitter } from "react-icons/fi";
+import { assets } from "../assets/assets";
+
+const links = [
+  { label: "Home", path: "/" },
+  { label: "Doctors", path: "/doctors" },
+  { label: "Services", path: "/services" },
+  { label: "About", path: "/about" },
+  { label: "Contact", path: "/contact" },
+];
 
 const Footer = () => {
-  const quickLinks = [
-    { name: "Home", url: "/" },
-    { name: "About Us", url: "/about" },
-    { name: "Services", url: "/services" },
-    { name: "Our Doctors", url: "/doctors" },
-    { name: "Contact", url: "/contact" },
-  ];
-
-  const socialLinks = [
-    { icon: <FaFacebookF />, url: "#", label: "Facebook" },
-    { icon: <FaTwitter />, url: "#", label: "Twitter" },
-    { icon: <FaInstagram />, url: "#", label: "Instagram" },
-    { icon: <FaLinkedinIn />, url: "#", label: "LinkedIn" },
-  ];
-
   return (
-    <footer className="bg-gradient-to-r from-teal-700 to-teal-800 text-white pt-16 pb-8">
-      <div className="container mx-auto px-6 lg:px-12 xl:px-20">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
-          <div className="md:col-span-4 lg:col-span-3">
-            <h3 className="text-2xl font-bold mb-6 relative after:absolute after:left-0 after:-bottom-3 after:w-16 after:h-1 after:bg-teal-500">
-              About Us
-            </h3>
-            <p className="text-sm leading-relaxed opacity-90 mb-6">
-              Connecting you to expert healthcare professionals through
-              innovative telemedicine solutions. Your health is our priority.
-            </p>
-            <div className="flex space-x-4">
-              {socialLinks.map((link, index) => (
-                <a
-                  key={index}
-                  href={link.url}
-                  aria-label={link.label}
-                  className="p-3 rounded-full bg-teal-600 hover:bg-teal-500 transition-all duration-300 transform hover:scale-110"
-                >
-                  <span className="text-lg">{link.icon}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          <div className="md:col-span-4 lg:col-span-3">
-            <h3 className="text-2xl font-bold mb-6 relative after:absolute after:left-0 after:-bottom-3 after:w-16 after:h-1 after:bg-teal-500">
-              Quick Links
-            </h3>
-            <ul className="space-y-3">
-              {quickLinks.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href={link.url}
-                    className="opacity-90 hover:opacity-100 hover:text-teal-300 transition-all duration-300 flex items-center group"
-                  >
-                    <span className="w-2 h-2 bg-teal-500 rounded-full mr-3 group-hover:animate-pulse"></span>
-                    {link.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="md:col-span-4 lg:col-span-6">
-            <h3 className="text-2xl font-bold mb-6 relative after:absolute after:left-0 after:-bottom-3 after:w-16 after:h-1 after:bg-teal-500">
-              Stay Updated
-            </h3>
-            <p className="text-sm opacity-90 mb-6">
-              Subscribe to our newsletter for health tips, updates, and special
-              offers.
-            </p>
-            <form className="flex gap-4">
-              <div className="flex-1 relative">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  aria-label="Email address"
-                  required
-                  className="w-full px-6 py-4 rounded-lg bg-white/10 backdrop-blur-sm border border-teal-500 focus:border-teal-300 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                />
-              </div>
+    <footer className="mt-14 rounded-3xl bg-gradient-to-br from-teal-800 via-teal-700 to-emerald-600 px-5 py-10 text-white sm:px-8 lg:px-10">
+      <div className="grid gap-10 md:grid-cols-3">
+        <div>
+          <img src={assets.logo} alt="Medico" className="h-10" />
+          <p className="mt-4 max-w-sm text-sm leading-6 text-teal-50">
+            Medico helps patients connect with trusted doctors and diagnostic
+            services through a simple and secure digital experience.
+          </p>
+          <div className="mt-5 flex items-center gap-2">
+            {[FiFacebook, FiTwitter, FiInstagram, FiLinkedin].map((Icon, index) => (
               <button
-                type="submit"
-                className="px-8 py-4 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg transition-all flex items-center gap-2"
+                key={index}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-teal-50 transition hover:bg-white/20"
+                aria-label="Social link"
+                type="button"
               >
-                <FaPaperPlane className="text-lg" />
-                <span>Subscribe</span>
+                <Icon className="h-4 w-4" />
               </button>
-            </form>
+            ))}
           </div>
         </div>
 
-        <div className="border-t border-teal-600 mb-8"></div>
+        <div>
+          <h3 className="text-lg font-semibold">Quick Links</h3>
+          <div className="mt-4 grid gap-2">
+            {links.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className="w-fit text-sm text-teal-50 transition hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
 
-        <div className="text-center opacity-80 text-sm">
-          <p>
-            Â© {new Date().getFullYear()} HealthConnect. All rights reserved.
-            <br className="md:hidden" />{" "}
-            <a
-              href="#"
-              className="hover:text-teal-300 underline transition-colors"
-            >
-              Privacy Policy
-            </a>{" "}
-            |{" "}
-            <a
-              href="#"
-              className="hover:text-teal-300 underline transition-colors"
-            >
-              Terms of Service
-            </a>
+        <div>
+          <h3 className="text-lg font-semibold">Stay Updated</h3>
+          <p className="mt-3 text-sm text-teal-50">
+            Subscribe for healthcare tips and feature updates.
           </p>
+          <form className="mt-4 flex gap-2" onSubmit={(event) => event.preventDefault()}>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="w-full rounded-xl border border-white/25 bg-white/10 px-3 py-2.5 text-sm text-white placeholder:text-teal-100 focus:border-white/50 focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
+            >
+              <FiSend className="h-4 w-4" />
+              Send
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div className="mt-8 border-t border-white/20 pt-4 text-xs text-teal-100 sm:flex sm:items-center sm:justify-between">
+        <p>© {new Date().getFullYear()} Medico. All rights reserved.</p>
+        <div className="mt-2 flex items-center gap-4 sm:mt-0">
+          <button type="button" className="hover:text-white transition">
+            Privacy Policy
+          </button>
+          <button type="button" className="hover:text-white transition">
+            Terms of Service
+          </button>
         </div>
       </div>
     </footer>
