@@ -61,7 +61,7 @@ const Testimonials = () => {
               Real Reviews From Real Appointments
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-gray-600 sm:text-base">
-              Latest patient feedback, sliding from newest to oldest.
+              Latest patient feedback...
             </p>
           </div>
           <span className="rounded-full border border-teal-200 bg-white px-4 py-2 text-sm font-medium text-teal-700">
