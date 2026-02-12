@@ -37,43 +37,48 @@ const TopDoctors = () => {
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {doctors.slice(0, 8).map((doctor) => (
-            <article
-              key={doctor._id}
-              onClick={() => navigate(`/appointment/${doctor._id}`)}
-              className="premium-panel group cursor-pointer overflow-hidden rounded-2xl transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-            >
-              <div className="relative h-52 overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 p-3">
-                <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-white/70">
-                  <img
-                    className="h-full w-full object-contain transition duration-500 group-hover:scale-105"
-                    src={resolveImageUrl(doctor.image, backendurl)}
-                    alt={doctor.name}
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-
-              <div className="p-4">
-                <div className="mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide">
-                  {doctor.available ? (
-                    <>
-                      <FiCheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                      <span className="text-emerald-700">Available</span>
-                    </>
-                  ) : (
-                    <>
-                      <FiXCircle className="h-3.5 w-3.5 text-red-600" />
-                      <span className="text-red-700">Unavailable</span>
-                    </>
-                  )}
+          {doctors
+            .filter((doc) => doc.available)
+            .slice(0, 8)
+            .map((doctor) => (
+              <article
+                key={doctor._id}
+                onClick={() => navigate(`/appointment/${doctor._id}`)}
+                className="premium-panel group cursor-pointer overflow-hidden rounded-2xl transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="relative h-52 overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50 p-3">
+                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-white/70">
+                    <img
+                      className="h-full w-full object-contain transition duration-500 group-hover:scale-105"
+                      src={resolveImageUrl(doctor.image, backendurl)}
+                      alt={doctor.name}
+                      loading="lazy"
+                    />
+                  </div>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-900">{doctor.name}</h3>
-                <p className="text-sm text-teal-700">{doctor.speciality}</p>
-              </div>
-            </article>
-          ))}
+                <div className="p-4">
+                  <div className="mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide">
+                    {doctor.available ? (
+                      <>
+                        <FiCheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="text-emerald-700">Available</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiXCircle className="h-3.5 w-3.5 text-red-600" />
+                        <span className="text-red-700">Unavailable</span>
+                      </>
+                    )}
+                  </div>
+
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {doctor.name}
+                  </h3>
+                  <p className="text-sm text-teal-700">{doctor.speciality}</p>
+                </div>
+              </article>
+            ))}
         </div>
       </div>
     </section>
