@@ -2,11 +2,11 @@ import validator from "validator";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
-import transporter from "../config/nodemailer.js";
 import { v2 as cloudinary } from "cloudinary";
 import doctorModel from "../models/doctorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import Stripe from "stripe";
+import { resend } from "../config/resend.js";
 
 const registerUser = async (req, res) => {
   try {
@@ -59,19 +59,11 @@ const registerUser = async (req, res) => {
       expiresAt: Date.now() + expiresIn,
     });
 
-    const mailOptions = {
-      from: process.env.SENDER_EMAIL,
+    await resend.emails.send({
+      from: `Medico <${process.env.SENDER_EMAIL}>`,
       to: email,
       subject: "Welcome to Medico",
       text: `Welcome to MEDICO App, ${name}. Your account has been created with email id: ${email}`,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email:", error);
-      } else {
-        console.log("Email sent successfully:", info.response);
-      }
     });
   } catch (error) {
     console.error(error);
@@ -130,6 +122,44 @@ const loginUser = async (req, res) => {
   }
 };
 
+// const sendVerifyOtp = async (req, res) => {
+//   try {
+//     const { userId } = req.body;
+
+//     const user = await userModel.findById(userId);
+//     if (user.isAccoutverified) {
+//       return res.json({ success: false, message: "Account already verified" });
+//     }
+//     const otp = String(Math.floor(100000 + Math.random() * 900000));
+
+//     user.verifyotp = otp;
+//     user.verifyotpExpireAt = Date.now() + 10 * 60 * 1000;
+//     await user.save();
+
+//     const mailOptions = {
+//       from: process.env.SENDER_EMAIL,
+//       to: user.email,
+//       subject: "Verify your account",
+//       text: `Verify your account. Your verification code is: ${otp}`,
+//     };
+
+//     transporter.sendMail(mailOptions, (error, info) => {
+//       if (error) {
+//         console.error("Error sending email:", error);
+//       } else {
+//         console.log("Email sent successfully:", info.response);
+//       }
+//     });
+//     res.json({
+//       success: true,
+//       message: "Verification code sent to your email",
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.json({ success: false, message: error.message });
+//   }
+// };
+
 const sendVerifyOtp = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -138,26 +168,20 @@ const sendVerifyOtp = async (req, res) => {
     if (user.isAccoutverified) {
       return res.json({ success: false, message: "Account already verified" });
     }
+
     const otp = String(Math.floor(100000 + Math.random() * 900000));
 
     user.verifyotp = otp;
     user.verifyotpExpireAt = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    const mailOptions = {
-      from: process.env.SENDER_EMAIL,
+    await resend.emails.send({
+      from: `Medico <${process.env.SENDER_EMAIL}>`,
       to: user.email,
       subject: "Verify your account",
       text: `Verify your account. Your verification code is: ${otp}`,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email:", error);
-      } else {
-        console.log("Email sent successfully:", info.response);
-      }
     });
+
     res.json({
       success: true,
       message: "Verification code sent to your email",
@@ -244,26 +268,16 @@ const sendResetOtp = async (req, res) => {
     user.resetOtpExpireAt = Date.now() + 300000;
     await user.save();
 
-    const mailOptions = {
-      from: process.env.SENDER_EMAIL,
+    await resend.emails.send({
+      from: `Medico <${process.env.SENDER_EMAIL}>`,
       to: user.email,
       subject: "Password Reset OTP",
       text: `Your password reset OTP is: ${otp}`,
-    };
+    });
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email:", error);
-        return res
-          .status(500)
-          .json({ success: false, message: "Failed to send email" });
-      } else {
-        console.log("Email sent:", info.response);
-        return res.json({
-          success: true,
-          message: "Password reset OTP sent successfully",
-        });
-      }
+    res.json({
+      success: true,
+      message: "Password reset OTP sent successfully",
     });
   } catch (error) {
     console.error(error);
@@ -410,7 +424,7 @@ const bookAppointment = async (req, res) => {
     const updatedDoctor = await doctorModel.findByIdAndUpdate(
       docId,
       { slots_booked },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedDoctor) {
@@ -504,7 +518,7 @@ const cancelAppointment = async (req, res) => {
     let slots_booked = doctorData.slots_booked;
     if (slots_booked[slotDate]) {
       slots_booked[slotDate] = slots_booked[slotDate].filter(
-        (e) => e !== slotTime
+        (e) => e !== slotTime,
       );
     }
     await doctorModel.findByIdAndUpdate(docId, { slots_booked });

@@ -8,6 +8,7 @@ import { AppContext } from "../context/AppContext";
 const VerifyPayment = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const paymentType = searchParams.get("type"); // "service" or null (appointment)
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const { backendurl, token } = useContext(AppContext);
@@ -21,16 +22,25 @@ const VerifyPayment = () => {
       }
 
       try {
+        const endpoint =
+          paymentType === "service"
+            ? `${backendurl}/api/services/verify-payment?session_id=${sessionId}`
+            : `${backendurl}/api/user/verify-payment?session_id=${sessionId}`;
+
         const { data } = await axios.post(
-          `${backendurl}/api/user/verify-payment?session_id=${sessionId}`,
+          endpoint,
           {},
           {
             headers: { token },
-          }
+          },
         );
 
         if (data.success) {
-          toast.success("Payment successful! Appointment confirmed.");
+          toast.success(
+            paymentType === "service"
+              ? "Payment successful! Service booking confirmed."
+              : "Payment successful! Appointment confirmed.",
+          );
           navigate("/my-appointments");
         } else {
           toast.error(data.message || "Payment verification failed.");
@@ -45,7 +55,7 @@ const VerifyPayment = () => {
     };
 
     verifyPayment();
-  }, [sessionId, navigate, backendurl, token]);
+  }, [sessionId, navigate, backendurl, token, paymentType]);
 
   if (loading) return <LoadingSpinner />;
 

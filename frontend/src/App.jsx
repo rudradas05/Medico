@@ -10,6 +10,7 @@ import MyProfile from "./pages/MyProfile";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
 import Services from "./pages/Services";
+import ServiceDetail from "./pages/ServiceDetail";
 import Footer from "./components/Footer";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -59,10 +60,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/appointment/:docId"
-          element={<Appointments />}
-        />
+        <Route path="/appointment/:docId" element={<Appointments />} />
         <Route
           path="/my-profile"
           element={
@@ -73,6 +71,7 @@ const App = () => {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/services" element={<Services />} />
+        <Route path="/services/:id" element={<ServiceDetail />} />
         <Route path="/email-verify" element={<EmailVerify />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-payment" element={<VerifyPayment />} />

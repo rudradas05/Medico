@@ -12,7 +12,7 @@ const Sidebar = () => {
 
   const filteredLinks = sidebarLinks.filter(
     ({ role }) =>
-      (admintoken && role === "admin") || (doctortoken && role === "doctor")
+      (admintoken && role === "admin") || (doctortoken && role === "doctor"),
   );
 
   return (
@@ -62,6 +62,24 @@ const sidebarLinks = [
     to: "/doctor-list",
     icon: assets.people_icon,
     label: "Doctors List",
+    role: "admin",
+  },
+  {
+    to: "/add-service",
+    icon: assets.add_icon,
+    label: "Add Service",
+    role: "admin",
+  },
+  {
+    to: "/services-list",
+    icon: assets.list_icon,
+    label: "Services List",
+    role: "admin",
+  },
+  {
+    to: "/service-bookings",
+    icon: assets.appointment_icon,
+    label: "Service Bookings",
     role: "admin",
   },
   {

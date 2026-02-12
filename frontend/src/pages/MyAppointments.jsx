@@ -32,13 +32,15 @@ const SummaryCard = ({ label, value, tone }) => {
 };
 
 const MyAppointments = () => {
-  const { backendurl, token, getDoctorsData, logoutUser } =
+  const { backendurl, token, getDoctorsData, logoutUser, currencySymbol } =
     useContext(AppContext);
   const [appointments, setAppointments] = useState([]);
+  const [serviceBookings, setServiceBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cancelingId, setCancelingId] = useState(null);
   const [payingId, setPayingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("appointments");
 
   const months = [
     "Jan",
@@ -76,7 +78,7 @@ const MyAppointments = () => {
       });
       if (data.success && Array.isArray(data.appointment)) {
         const sortedAppointments = data.appointment.sort(
-          (a, b) => new Date(b.slotDate) - new Date(a.slotDate)
+          (a, b) => new Date(b.slotDate) - new Date(a.slotDate),
         );
         setAppointments(sortedAppointments);
       } else {
@@ -154,12 +156,12 @@ const MyAppointments = () => {
       const { data } = await axios.post(
         `${backendurl}/api/user/cancel-appointment`,
         { appointmentId },
-        { headers: { token } }
+        { headers: { token } },
       );
 
       if (data.success) {
         setAppointments((prev) =>
-          prev.filter((app) => app._id !== appointmentId)
+          prev.filter((app) => app._id !== appointmentId),
         );
         toast.success("Your appointment was canceled.");
         fetchAppointments();
@@ -167,14 +169,14 @@ const MyAppointments = () => {
       } else {
         toast.error(
           data.message ||
-            "We couldn't cancel that appointment. Please try again."
+            "We couldn't cancel that appointment. Please try again.",
         );
       }
     } catch (error) {
       toast.error(
         `Cancel failed: ${
           error.response?.data?.message || "We couldn't cancel the appointment."
-        }`
+        }`,
       );
     } finally {
       setCancelingId(null);
@@ -187,7 +189,7 @@ const MyAppointments = () => {
       const { data } = await axios.post(
         `${backendurl}/api/user/create-checkout-session`,
         { appointmentId },
-        { headers: { token } }
+        { headers: { token } },
       );
 
       const stripe = await stripePromise;
@@ -201,155 +203,388 @@ const MyAppointments = () => {
 
   useEffect(() => {
     fetchAppointments();
+    fetchServiceBookings();
   }, [fetchAppointments]);
+
+  const fetchServiceBookings = async () => {
+    if (!token) return;
+    try {
+      const { data } = await axios.post(
+        `${backendurl}/api/services/user/bookings`,
+        {},
+        { headers: { token } },
+      );
+      if (data.success && Array.isArray(data.bookings)) {
+        setServiceBookings(data.bookings);
+      }
+    } catch (error) {
+      // Silently fail for service bookings
+    }
+  };
+
+  const cancelServiceBooking = async (bookingId) => {
+    setCancelingId(bookingId);
+    try {
+      const { data } = await axios.post(
+        `${backendurl}/api/services/cancel-booking`,
+        { bookingId },
+        { headers: { token } },
+      );
+      if (data.success) {
+        toast.success("Service booking cancelled.");
+        fetchServiceBookings();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error("Could not cancel the booking.");
+    } finally {
+      setCancelingId(null);
+    }
+  };
+
+  const payServiceBooking = async (bookingId) => {
+    setPayingId(bookingId);
+    try {
+      const { data } = await axios.post(
+        `${backendurl}/api/services/create-checkout-session`,
+        { bookingId },
+        { headers: { token } },
+      );
+      const stripe = await stripePromise;
+      await stripe.redirectToCheckout({ sessionId: data.sessionId });
+    } catch (error) {
+      toast.error("Payment couldn't start. Please try again.");
+    } finally {
+      setPayingId(null);
+    }
+  };
 
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="max-w-5xl mx-auto p-4">
-      <h2 className="text-2xl font-semibold mb-6 border-b pb-3">
+      <h2 className="text-2xl font-semibold mb-4 border-b pb-3">
         My Appointments
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <SummaryCard label="Upcoming" value={summary.upcoming} tone="primary" />
-        <SummaryCard label="Completed" value={summary.completed} tone="emerald" />
-        <SummaryCard label="Cancelled" value={summary.cancelled} tone="red" />
+      {/* Tabs */}
+      <div className="flex gap-4 mb-6 border-b">
+        <button
+          onClick={() => setActiveTab("appointments")}
+          className={`pb-2 px-1 text-sm font-medium transition-all border-b-2 ${
+            activeTab === "appointments"
+              ? "border-primary text-primary"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Doctor Appointments
+        </button>
+        <button
+          onClick={() => setActiveTab("services")}
+          className={`pb-2 px-1 text-sm font-medium transition-all border-b-2 ${
+            activeTab === "services"
+              ? "border-primary text-primary"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Service Bookings{" "}
+          {serviceBookings.length > 0 && `(${serviceBookings.length})`}
+        </button>
       </div>
 
-      {/* Filter controls */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {["all", "upcoming", "completed", "cancelled"].map((filter) => {
-          const labels = {
-            all: "All",
-            upcoming: "Upcoming",
-            completed: "Completed",
-            cancelled: "Cancelled",
-          };
-          const active = statusFilter === filter;
-          return (
-            <button
-              key={filter}
-              onClick={() => setStatusFilter(filter)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                active
-                  ? "bg-primary text-white shadow-sm"
-                  : "bg-white border border-gray-200 text-gray-700 hover:border-primary/50"
-              }`}
-            >
-              {labels[filter]}
-            </button>
-          );
-        })}
-      </div>
+      {activeTab === "appointments" && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <SummaryCard
+              label="Upcoming"
+              value={summary.upcoming}
+              tone="primary"
+            />
+            <SummaryCard
+              label="Completed"
+              value={summary.completed}
+              tone="emerald"
+            />
+            <SummaryCard
+              label="Cancelled"
+              value={summary.cancelled}
+              tone="red"
+            />
+          </div>
 
-      {appointments.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          No appointments found
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {appointments
-            .filter((appointment) => {
-              if (statusFilter === "all") return true;
-              if (statusFilter === "upcoming")
-                return (
-                  !appointment.cancelled &&
-                  !appointment.isCompleted &&
-                  !isExpired(appointment.slotDate, appointment.slotTime)
-                );
-              if (statusFilter === "completed") return appointment.isCompleted;
-              if (statusFilter === "cancelled") return appointment.cancelled;
-              return true;
-            })
-            .map((appointment) => (
-            <div
-              key={appointment._id}
-              className="bg-white rounded-lg shadow-sm p-4 border transition-all hover:shadow-md"
-            >
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {/* Doctor's Image */}
-                  <div className="flex-shrink-0">
-                    <img
-                      className="w-32 h-32 object-cover rounded-lg bg-gray-100"
-                    src={appointment.docData.image}
-                    alt={`Dr. ${appointment.docData.name}`}
-                    onError={(e) => (e.target.src = "/default-doctor.jpg")}
-                  />
-                </div>
+          {/* Filter controls */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {["all", "upcoming", "completed", "cancelled"].map((filter) => {
+              const labels = {
+                all: "All",
+                upcoming: "Upcoming",
+                completed: "Completed",
+                cancelled: "Cancelled",
+              };
+              const active = statusFilter === filter;
+              return (
+                <button
+                  key={filter}
+                  onClick={() => setStatusFilter(filter)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    active
+                      ? "bg-primary text-white shadow-sm"
+                      : "bg-white border border-gray-200 text-gray-700 hover:border-primary/50"
+                  }`}
+                >
+                  {labels[filter]}
+                </button>
+              );
+            })}
+          </div>
 
-                <div className="flex-grow space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {appointment.docData.name}
-                    </h3>
-                    {getStatusPill(appointment)}
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    {appointment.docData.speciality}
-                  </p>
-
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>
-                      <span className="font-medium">Address:</span>{" "}
-                      {appointment.docData.address?.line1},{" "}
-                      {appointment.docData.address?.line2}
-                    </p>
-                    <p>
-                      <span className="font-medium">Date & Time:</span>{" "}
-                      {formatAppointmentDate(appointment.slotDate)} |{" "}
-                      {appointment.slotTime}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
-                  {appointment.cancelled ? (
-                    <button className="w-full sm:w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed">
-                      Appointment Cancelled
-                    </button>
-                  ) : appointment.isCompleted ? (
-                    <button className="w-full sm:w-full px-4 py-2 bg-teal-600 text-white rounded-md cursor-not-allowed">
-                      Appointment Completed
-                    </button>
-                  ) : isExpired(appointment.slotDate, appointment.slotTime) ? (
-                    <button className="w-full sm:w-full px-4 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed">
-                      Appointment Expired
-                    </button>
-                  ) : (
-                    <>
-                      {appointment.payment ? (
-                        <button className="w-full sm:w-full px-4 py-2 bg-green-700 text-white rounded-md">
-                          Paid
-                        </button>
-                      ) : (
-                        <button
-                          className="w-full sm:w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                          onClick={() => appoinmentStripepay(appointment._id)}
-                          disabled={payingId === appointment._id}
-                        >
-                          {payingId === appointment._id
-                            ? "Processing"
-                            : "Pay Online"}
-                        </button>
-                      )}
-
-                      <button
-                        className="w-full sm:w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
-                        onClick={() => handleCancelAppointment(appointment._id)}
-                        disabled={cancelingId === appointment._id}
-                      >
-                        {cancelingId === appointment._id
-                          ? "Canceling..."
-                          : "Cancel Appointment"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
+          {appointments.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No appointments found
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="space-y-4">
+              {appointments
+                .filter((appointment) => {
+                  if (statusFilter === "all") return true;
+                  if (statusFilter === "upcoming")
+                    return (
+                      !appointment.cancelled &&
+                      !appointment.isCompleted &&
+                      !isExpired(appointment.slotDate, appointment.slotTime)
+                    );
+                  if (statusFilter === "completed")
+                    return appointment.isCompleted;
+                  if (statusFilter === "cancelled")
+                    return appointment.cancelled;
+                  return true;
+                })
+                .map((appointment) => (
+                  <div
+                    key={appointment._id}
+                    className="bg-white rounded-lg shadow-sm p-4 border transition-all hover:shadow-md"
+                  >
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {/* Doctor's Image */}
+                      <div className="flex-shrink-0">
+                        <img
+                          className="w-32 h-32 object-cover rounded-lg bg-gray-100"
+                          src={appointment.docData.image}
+                          alt={`Dr. ${appointment.docData.name}`}
+                          onError={(e) =>
+                            (e.target.src = "/default-doctor.jpg")
+                          }
+                        />
+                      </div>
+
+                      <div className="flex-grow space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {appointment.docData.name}
+                          </h3>
+                          {getStatusPill(appointment)}
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {appointment.docData.speciality}
+                        </p>
+
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>
+                            <span className="font-medium">Address:</span>{" "}
+                            {appointment.docData.address?.line1},{" "}
+                            {appointment.docData.address?.line2}
+                          </p>
+                          <p>
+                            <span className="font-medium">Date & Time:</span>{" "}
+                            {formatAppointmentDate(appointment.slotDate)} |{" "}
+                            {appointment.slotTime}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
+                        {appointment.cancelled ? (
+                          <button className="w-full sm:w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed">
+                            Appointment Cancelled
+                          </button>
+                        ) : appointment.isCompleted ? (
+                          <button className="w-full sm:w-full px-4 py-2 bg-teal-600 text-white rounded-md cursor-not-allowed">
+                            Appointment Completed
+                          </button>
+                        ) : isExpired(
+                            appointment.slotDate,
+                            appointment.slotTime,
+                          ) ? (
+                          <button className="w-full sm:w-full px-4 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed">
+                            Appointment Expired
+                          </button>
+                        ) : (
+                          <>
+                            {appointment.payment ? (
+                              <button className="w-full sm:w-full px-4 py-2 bg-green-700 text-white rounded-md">
+                                Paid
+                              </button>
+                            ) : (
+                              <button
+                                className="w-full sm:w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                onClick={() =>
+                                  appoinmentStripepay(appointment._id)
+                                }
+                                disabled={payingId === appointment._id}
+                              >
+                                {payingId === appointment._id
+                                  ? "Processing"
+                                  : "Pay Online"}
+                              </button>
+                            )}
+
+                            <button
+                              className="w-full sm:w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
+                              onClick={() =>
+                                handleCancelAppointment(appointment._id)
+                              }
+                              disabled={cancelingId === appointment._id}
+                            >
+                              {cancelingId === appointment._id
+                                ? "Canceling..."
+                                : "Cancel Appointment"}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Service Bookings Tab */}
+      {activeTab === "services" && (
+        <>
+          {serviceBookings.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg">No service bookings yet.</p>
+              <p className="text-sm mt-1">
+                Book a diagnostic service from our Services page.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {serviceBookings.map((booking) => (
+                <div
+                  key={booking._id}
+                  className="bg-white rounded-lg shadow-sm p-4 border transition-all hover:shadow-md"
+                >
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-shrink-0">
+                      {booking.serviceImage ? (
+                        <img
+                          className="w-32 h-32 object-cover rounded-lg bg-gray-100"
+                          src={booking.serviceImage}
+                          alt={booking.serviceName}
+                        />
+                      ) : (
+                        <div className="w-32 h-32 bg-teal-50 rounded-lg flex items-center justify-center">
+                          <svg
+                            className="w-10 h-10 text-teal-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-grow space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {booking.serviceName}
+                        </h3>
+                        {booking.cancelled ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                            Cancelled
+                          </span>
+                        ) : booking.isCompleted ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            Completed
+                          </span>
+                        ) : booking.payment ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                            Paid
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                            Pending
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p>
+                          <span className="font-medium">Date:</span>{" "}
+                          {booking.slotDate}
+                        </p>
+                        <p>
+                          <span className="font-medium">Time:</span>{" "}
+                          {booking.slotTime}
+                        </p>
+                        <p>
+                          <span className="font-medium">Amount:</span>{" "}
+                          {currencySymbol}
+                          {booking.amount}
+                        </p>
+                        <p>
+                          <span className="font-medium">Payment:</span>{" "}
+                          <span className="capitalize">
+                            {booking.paymentMethod}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
+                      {!booking.cancelled && !booking.isCompleted && (
+                        <>
+                          {!booking.payment &&
+                            booking.paymentMethod === "online" && (
+                              <button
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 text-sm"
+                                onClick={() => payServiceBooking(booking._id)}
+                                disabled={payingId === booking._id}
+                              >
+                                {payingId === booking._id
+                                  ? "Processing"
+                                  : "Pay Online"}
+                              </button>
+                            )}
+                          <button
+                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 text-sm"
+                            onClick={() => cancelServiceBooking(booking._id)}
+                            disabled={cancelingId === booking._id}
+                          >
+                            {cancelingId === booking._id
+                              ? "Canceling..."
+                              : "Cancel"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

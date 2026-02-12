@@ -1,0 +1,426 @@
+import diagnosticServiceModel from "../models/diagnosticServiceModel.js";
+import serviceBookingModel from "../models/serviceBookingModel.js";
+import userModel from "../models/userModel.js";
+import Stripe from "stripe";
+import { v2 as cloudinary } from "cloudinary";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// ─── PUBLIC ────────────────────────────────────────────────────
+
+const listServices = async (req, res) => {
+  try {
+    const services = await diagnosticServiceModel.find({});
+    res.json({ success: true, services });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getServiceById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const service = await diagnosticServiceModel.findById(id);
+    if (!service) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Service not found" });
+    }
+    res.json({ success: true, service });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─── USER (auth required) ──────────────────────────────────────
+
+const bookService = async (req, res) => {
+  try {
+    const { userId, serviceId, slotDate, slotTime, paymentMethod } = req.body;
+
+    if (!serviceId || !slotDate || !slotTime) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
+
+    const service = await diagnosticServiceModel.findById(serviceId);
+    if (!service) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Service not found" });
+    }
+    if (!service.available) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Service is currently unavailable" });
+    }
+
+    // Check if the slot is already booked
+    const slots_booked = service.slots_booked || {};
+    if (slots_booked[slotDate]?.includes(slotTime)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "This time slot is already booked" });
+    }
+
+    const userData = await userModel
+      .findById(userId)
+      .select("-password")
+      .lean();
+    if (!userData) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const booking = new serviceBookingModel({
+      userId,
+      serviceId,
+      serviceName: service.name,
+      serviceImage: service.image,
+      userData,
+      amount: service.price,
+      slotDate,
+      slotTime,
+      paymentMethod: paymentMethod || "cash",
+      payment: paymentMethod === "cash" ? false : false,
+      date: Date.now(),
+    });
+
+    await booking.save();
+
+    // Mark the slot as booked in the service (same pattern as doctor appointments)
+    let slots_booked_updated = service.slots_booked || {};
+    slots_booked_updated[slotDate] = [
+      ...(slots_booked_updated[slotDate] || []),
+      slotTime,
+    ];
+    await diagnosticServiceModel.findByIdAndUpdate(serviceId, {
+      slots_booked: slots_booked_updated,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Service booked successfully",
+      booking,
+    });
+  } catch (error) {
+    console.error("Error booking service:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+const getUserServiceBookings = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const bookings = await serviceBookingModel
+      .find({ userId })
+      .sort({ date: -1 });
+    res.json({ success: true, bookings });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const cancelServiceBooking = async (req, res) => {
+  try {
+    const { userId, bookingId } = req.body;
+    if (!userId || !bookingId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing fields" });
+    }
+
+    const booking = await serviceBookingModel.findById(bookingId);
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+    if (booking.userId.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized action" });
+    }
+
+    await serviceBookingModel.findByIdAndUpdate(bookingId, {
+      cancelled: true,
+    });
+
+    // Release the slot
+    const service = await diagnosticServiceModel.findById(booking.serviceId);
+    if (service) {
+      let slots_booked = service.slots_booked || {};
+      if (slots_booked[booking.slotDate]) {
+        slots_booked[booking.slotDate] = slots_booked[booking.slotDate].filter(
+          (t) => t !== booking.slotTime,
+        );
+      }
+      await diagnosticServiceModel.findByIdAndUpdate(booking.serviceId, {
+        slots_booked,
+      });
+    }
+
+    res.json({ success: true, message: "Booking cancelled successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const createServiceCheckoutSession = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+
+    const booking = await serviceBookingModel.findById(bookingId);
+    if (!booking || booking.cancelled) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    const amount = Math.round(Number(booking.amount) * 100);
+    if (!amount || amount <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid amount" });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      success_url: `${process.env.FRONTEND_URL}/verify-payment?session_id={CHECKOUT_SESSION_ID}&type=service`,
+      cancel_url: `${process.env.FRONTEND_URL}/verify-payment?session_id={CHECKOUT_SESSION_ID}&type=service`,
+      line_items: [
+        {
+          price_data: {
+            currency: process.env.CURRENCY || "INR",
+            product_data: { name: `Diagnostic: ${booking.serviceName}` },
+            unit_amount: amount,
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: { bookingId: booking._id.toString(), type: "service" },
+    });
+
+    res.json({ success: true, sessionId: session.id });
+  } catch (error) {
+    console.error("Error creating service checkout session:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+const verifyServicePayment = async (req, res) => {
+  try {
+    const { session_id } = req.query;
+    if (!session_id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Session ID is missing" });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (!session || session.payment_status !== "paid") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Payment not completed" });
+    }
+
+    const bookingId = session.metadata?.bookingId;
+    if (!bookingId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid session metadata" });
+    }
+
+    await serviceBookingModel.findByIdAndUpdate(bookingId, { payment: true });
+
+    res.json({ success: true, message: "Payment verified successfully" });
+  } catch (error) {
+    console.error("Service payment verification error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ─── ADMIN ─────────────────────────────────────────────────────
+
+const addService = async (req, res) => {
+  try {
+    const { name, description, price, category, preTestInstructions } =
+      req.body;
+
+    if (!name || !description || !price) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, description and price are required",
+      });
+    }
+
+    let imageUrl = "";
+    if (req.file) {
+      const imageUpload = await cloudinary.uploader.upload(req.file.path, {
+        resource_type: "image",
+      });
+      imageUrl = imageUpload.secure_url;
+    }
+
+    // preTestInstructions may arrive as a JSON string from FormData
+    let parsedInstructions = preTestInstructions || [];
+    if (typeof parsedInstructions === "string") {
+      try {
+        parsedInstructions = JSON.parse(parsedInstructions);
+      } catch {
+        parsedInstructions = [];
+      }
+    }
+
+    const service = new diagnosticServiceModel({
+      name,
+      description,
+      price: Number(price),
+      image: imageUrl,
+      category: category || "other",
+      preTestInstructions: parsedInstructions,
+      available: true,
+    });
+
+    await service.save();
+    res.status(201).json({ success: true, message: "Service added", service });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updateService = async (req, res) => {
+  try {
+    const { serviceId, ...updateData } = req.body;
+    if (!serviceId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Service ID required" });
+    }
+
+    const service = await diagnosticServiceModel.findByIdAndUpdate(
+      serviceId,
+      updateData,
+      { new: true },
+    );
+    if (!service) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Service not found" });
+    }
+    res.json({ success: true, message: "Service updated", service });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const deleteService = async (req, res) => {
+  try {
+    const { serviceId } = req.body;
+    if (!serviceId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Service ID required" });
+    }
+    await diagnosticServiceModel.findByIdAndDelete(serviceId);
+    res.json({ success: true, message: "Service deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getAllServiceBookings = async (req, res) => {
+  try {
+    const bookings = await serviceBookingModel.find({}).sort({ date: -1 });
+    res.json({ success: true, bookings });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const completeServiceBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Booking ID required" });
+    }
+    await serviceBookingModel.findByIdAndUpdate(bookingId, {
+      isCompleted: true,
+    });
+    res.json({ success: true, message: "Booking marked as completed" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const adminCancelServiceBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Booking ID required" });
+    }
+
+    const booking = await serviceBookingModel.findById(bookingId);
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    await serviceBookingModel.findByIdAndUpdate(bookingId, {
+      cancelled: true,
+    });
+
+    // Release the slot
+    const service = await diagnosticServiceModel.findById(booking.serviceId);
+    if (service) {
+      let slots_booked = service.slots_booked || {};
+      if (slots_booked[booking.slotDate]) {
+        slots_booked[booking.slotDate] = slots_booked[booking.slotDate].filter(
+          (t) => t !== booking.slotTime,
+        );
+      }
+      await diagnosticServiceModel.findByIdAndUpdate(booking.serviceId, {
+        slots_booked,
+      });
+    }
+
+    res.json({ success: true, message: "Booking cancelled" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export {
+  listServices,
+  getServiceById,
+  bookService,
+  getUserServiceBookings,
+  cancelServiceBooking,
+  createServiceCheckoutSession,
+  verifyServicePayment,
+  addService,
+  updateService,
+  deleteService,
+  getAllServiceBookings,
+  completeServiceBooking,
+  adminCancelServiceBooking,
+};

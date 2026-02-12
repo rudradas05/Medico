@@ -1,194 +1,329 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  FiActivity,
+  FiAperture,
+  FiChevronRight,
+  FiClock,
+  FiCpu,
+  FiFilter,
+  FiGrid,
+  FiHeart,
+  FiSearch,
+  FiShield,
+} from "react-icons/fi";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { AppContext } from "../context/AppContext";
+import { resolveImageUrl } from "../utils/imageUrl";
 
-const servicesData = [
+const CATEGORIES = [
   {
-    id: 1,
-    title: "Lab Reports",
-    shortDescription: "Get your lab test results conveniently.",
-    description:
-      "Our lab report service provides detailed and accurate results for all your medical tests. You can access these reports directly through our platform.",
-    image:
-      "https://th.bing.com/th/id/OIP.VugIWHCrB3EeedVpUWhiFAHaE8?pid=ImgDet&w=193&h=128&c=7&dpr=2",
+    value: "all",
+    label: "All Services",
+    hint: "Complete catalog",
+    Icon: FiGrid,
   },
   {
-    id: 2,
-    title: "Doctor's Prescription",
-    shortDescription: "Get expert prescriptions from qualified doctors.",
-    description:
-      "Consult with top-rated doctors to receive accurate prescriptions tailored to your health needs.",
-    image:
-      "https://th.bing.com/th/id/OIP.GwvoDxUSbJIsmv3ZC8GL3wHaE7?w=264&h=180&c=7&r=0&o=5&dpr=2&pid=1.7",
+    value: "imaging-radiology",
+    label: "Imaging & Radiology",
+    hint: "Scans and imaging",
+    Icon: FiAperture,
   },
   {
-    id: 3,
-    title: "Online Consultation",
-    shortDescription: "Consult with doctors online anytime, anywhere.",
-    description:
-      "Enjoy the convenience of online consultations with experienced doctors through video calls or chat.",
-    image:
-      "https://th.bing.com/th/id/OIP.jle8tqJMHY4SM9hvdh0ztgHaFj?pid=ImgDet&w=193&h=144&c=7&dpr=2",
+    value: "laboratory",
+    label: "Laboratory Tests",
+    hint: "Blood and urine panels",
+    Icon: FiActivity,
   },
   {
-    id: 4,
-    title: "Medicine Delivery",
-    shortDescription: "Get medicines delivered to your doorstep.",
-    description:
-      "Order medicines through our platform and have them delivered to your home in a timely manner.",
-    image:
-      "https://th.bing.com/th/id/OIP.AwPL799-F1L4gp_U2geCBwHaEK?rs=1&pid=ImgDetMain",
+    value: "cardiovascular-pulmonary",
+    label: "Heart & Lungs",
+    hint: "Cardio and respiratory",
+    Icon: FiHeart,
   },
   {
-    id: 5,
-    title: "Health Checkup Packages",
-    shortDescription: "Comprehensive health checkups at affordable prices.",
-    description:
-      "Choose from various health checkup packages to ensure your overall well-being.",
-    image:
-      "https://th.bing.com/th/id/OIP.fDeii030j6u7ipnQCjQ9uQHaE8?w=246&h=180&c=7&r=0&o=5&dpr=2&pid=1.7",
+    value: "endoscopy",
+    label: "Endoscopy",
+    hint: "Internal diagnostics",
+    Icon: FiSearch,
+  },
+  {
+    value: "neurological-functional",
+    label: "Neuro & Functional",
+    hint: "Nerve and function tests",
+    Icon: FiCpu,
   },
 ];
 
+const CATEGORY_MAP = CATEGORIES.reduce((acc, item) => {
+  if (item.value !== "all") {
+    acc[item.value] = item;
+  }
+  return acc;
+}, {});
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
 const Services = () => {
-  const [selectedService, setSelectedService] = useState(null);
+  const { backendurl, currencySymbol } = useContext(AppContext);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+
+  const activeServices = useMemo(
+    () => services.filter((service) => service.available),
+    [services],
+  );
+
+  const filteredServices = useMemo(() => {
+    return activeServices
+      .filter(
+        (service) =>
+          activeCategory === "all" || service.category === activeCategory,
+      )
+      .filter((service) => {
+        if (!search.trim()) return true;
+        const query = search.toLowerCase();
+        return (
+          service.name.toLowerCase().includes(query) ||
+          service.description?.toLowerCase().includes(query)
+        );
+      });
+  }, [activeServices, activeCategory, search]);
+
+  const uniqueCategoryCount = useMemo(() => {
+    return new Set(activeServices.map((service) => service.category)).size;
+  }, [activeServices]);
+
+  const fetchServices = async () => {
+    try {
+      const { data } = await axios.get(`${backendurl}/api/services/list`);
+      if (data.success) {
+        setServices(data.services || []);
+      } else {
+        toast.error(data.message || "Could not load services");
+      }
+    } catch {
+      toast.error("Could not load services");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, [backendurl]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[62vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
-      <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center py-12 rounded-2xl mb-12 shadow-xl transform transition-all duration-500 hover:shadow-2xl">
-        <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-5xl font-bold mb-4 animate-fade-in-down">
-            Medico Healthcare Services
-          </h1>
-          <p className="text-xl text-blue-100 font-medium leading-relaxed">
-            Your Gateway to Comprehensive, Modern Healthcare Solutions
-          </p>
-        </div>
-      </header>
+    <div className="min-h-screen pb-12">
+      <section className="relative mt-4 overflow-hidden rounded-[28px] bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-500 text-white shadow-lg">
+        <div className="absolute -right-14 -top-16 h-52 w-52 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-emerald-200/20 blur-2xl" />
+        <div className="relative mx-auto max-w-6xl px-6 py-12 sm:px-8 lg:px-10">
+          <div className="max-w-3xl">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-teal-50">
+              <FiShield className="h-4 w-4" />
+              Trusted Diagnostics
+            </p>
+            <h1 className="text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
+              Book Diagnostic Services In Minutes
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm text-teal-50 sm:text-base">
+              Browse verified lab tests and scans, compare prices, and book your
+              preferred slot quickly from one place.
+            </p>
+          </div>
 
-      <div className="relative">
-        {!selectedService ? (
-          <>
-            <h2 className="text-4xl font-bold text-center mb-16 text-gray-800">
-              Discover Our Services
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {servicesData.map((service) => (
-                <div
-                  key={service.id}
-                  onClick={() => setSelectedService(service)}
-                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-out cursor-pointer overflow-hidden"
-                >
-                  <div className="relative h-56 overflow-hidden">
-                    <img
-                      src={service.image}
-                      alt={service.title}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/50 to-transparent" />
-                  </div>
-
-                  <div className="p-6">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors">
-                      {service.title}
-                    </h3>
-                    <p className="text-gray-600 text-base leading-relaxed">
-                      {service.shortDescription}
-                    </p>
-                    <button className="mt-4 inline-flex items-center text-blue-600 font-semibold group-hover:underline">
-                      Learn More
-                      <svg
-                        className="w-4 h-4 ml-2 mt-1 transform group-hover:translate-x-1 transition-transform"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
+              <p className="text-xs uppercase tracking-wide text-teal-100">
+                Active Services
+              </p>
+              <p className="mt-1 text-2xl font-semibold">{activeServices.length}</p>
             </div>
-          </>
-        ) : (
-          <div className="max-w-6xl mx-auto">
-            <button
-              onClick={() => setSelectedService(null)}
-              className="mb-8 inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold transition-colors"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                />
-              </svg>
-              Back to Services
-            </button>
-
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="relative h-96 md:h-auto">
-                  <img
-                    src={selectedService.image}
-                    alt={selectedService.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                <div className="p-8 space-y-6">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-6">
-                    {selectedService.title}
-                  </h1>
-                  <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                    {selectedService.description}
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    {[
-                      "Trusted professionals",
-                      "Fast turnaround",
-                      "Secure data",
-                    ].map((item) => (
-                      <span
-                        key={item}
-                        className="px-4 py-2 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                  <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center">
-                    Get Started
-                    <svg
-                      className="w-5 h-5 ml-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 8l4 4m0 0l-4 4m4-4H3"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+            <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
+              <p className="text-xs uppercase tracking-wide text-teal-100">
+                Categories
+              </p>
+              <p className="mt-1 text-2xl font-semibold">{uniqueCategoryCount}</p>
+            </div>
+            <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
+              <p className="text-xs uppercase tracking-wide text-teal-100">
+                Slot Duration
+              </p>
+              <p className="mt-1 text-2xl font-semibold">30 Min</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="mx-auto -mt-6 max-w-6xl px-2 sm:px-4">
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-md sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full lg:max-w-md">
+              <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search tests, scans, checkups..."
+                className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-800 outline-none transition focus:border-primary focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-gray-500 sm:text-sm">
+              <FiFilter className="h-4 w-4 text-primary" />
+              <span>
+                Showing <strong className="text-gray-700">{filteredServices.length}</strong>{" "}
+                {filteredServices.length === 1 ? "service" : "services"}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+            {CATEGORIES.map((category) => {
+              const isActive = activeCategory === category.value;
+              const Icon = category.Icon;
+
+              return (
+                <button
+                  key={category.value}
+                  onClick={() => setActiveCategory(category.value)}
+                  className={`flex min-w-max items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition sm:text-sm ${
+                    isActive
+                      ? "border-primary bg-teal-50 text-primary shadow-sm"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{category.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto mt-8 max-w-6xl px-2 sm:px-4">
+        {filteredServices.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-16 text-center">
+            <FiSearch className="mx-auto h-10 w-10 text-gray-300" />
+            <h2 className="mt-4 text-xl font-semibold text-gray-800">
+              No services found
+            </h2>
+            <p className="mx-auto mt-2 max-w-lg text-sm text-gray-500">
+              {search
+                ? `No match for "${search}". Try a broader keyword or clear filters.`
+                : "No diagnostic services are available in this category right now."}
+            </p>
+            {(activeCategory !== "all" || search.trim()) && (
+              <button
+                onClick={() => {
+                  setActiveCategory("all");
+                  setSearch("");
+                }}
+                className="mt-5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-600"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <motion.div
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            transition={{ staggerChildren: 0.06 }}
+            className="grid grid-cols-1 gap-5 pb-6 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {filteredServices.map((service) => {
+              const categoryMeta = CATEGORY_MAP[service.category];
+              const CategoryIcon = categoryMeta?.Icon || FiActivity;
+
+              return (
+                <motion.article
+                  key={service._id}
+                  variants={cardVariants}
+                  onClick={() => navigate(`/services/${service._id}`)}
+                  className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-teal-50 to-emerald-50">
+                    {service.image ? (
+                      <img
+                        src={resolveImageUrl(service.image, backendurl)}
+                        alt={service.name}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <span className="rounded-2xl border border-teal-200 bg-white/80 p-5 text-primary">
+                          <CategoryIcon className="h-10 w-10" />
+                        </span>
+                      </div>
+                    )}
+
+                    <span className="absolute left-3 top-3 rounded-full border border-teal-200 bg-white/95 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-teal-700">
+                      {categoryMeta?.label || service.category}
+                    </span>
+
+                    <span className="absolute right-3 top-3 rounded-lg bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-white">
+                      {currencySymbol}
+                      {service.price}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-5">
+                    <h3 className="line-clamp-2 text-lg font-bold text-gray-900 group-hover:text-primary">
+                      {service.name}
+                    </h3>
+                    <p className="mt-2 line-clamp-2 min-h-10 text-sm text-gray-500">
+                      {service.description ||
+                        "Detailed diagnostic service with professional guidance."}
+                    </p>
+
+                    <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                      <span className="inline-flex items-center gap-1.5">
+                        <FiClock className="h-3.5 w-3.5 text-primary" />
+                        30 min slot
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <FiShield className="h-3.5 w-3.5 text-primary" />
+                        Verified care
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        navigate(`/services/${service._id}`);
+                      }}
+                      className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600"
+                    >
+                      View and Book
+                      <FiChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </motion.article>
+              );
+            })}
+          </motion.div>
         )}
-      </div>
+      </section>
     </div>
   );
 };

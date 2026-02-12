@@ -3,8 +3,53 @@ import { AdminContext } from "../../context/AdminContext";
 import { motion } from "framer-motion";
 import { FaUserMd } from "react-icons/fa";
 
+const ABSOLUTE_URL_REGEX = /^https?:\/\//i;
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+
+const resolveImageUrl = (imagePath, backendurl = "") => {
+  if (typeof imagePath !== "string") return "";
+
+  const raw = imagePath.trim();
+  if (!raw) return "";
+
+  const normalized = raw.replace(/\\/g, "/");
+
+  if (normalized.startsWith("//")) {
+    return encodeURI(`https:${normalized}`);
+  }
+
+  if (ABSOLUTE_URL_REGEX.test(normalized)) {
+    try {
+      const parsed = new URL(normalized);
+      if (
+        parsed.protocol === "http:" &&
+        !LOCAL_HOSTNAMES.has(parsed.hostname)
+      ) {
+        parsed.protocol = "https:";
+        return encodeURI(parsed.toString());
+      }
+    } catch {
+      // Return the input if URL parsing fails.
+    }
+    return encodeURI(normalized);
+  }
+
+  if (normalized.startsWith("data:") || normalized.startsWith("blob:")) {
+    return normalized;
+  }
+
+  const baseUrl = (backendurl || "").replace(/\/+$/, "");
+  if (!baseUrl) return encodeURI(normalized);
+
+  if (normalized.startsWith("/")) {
+    return encodeURI(`${baseUrl}${normalized}`);
+  }
+
+  return encodeURI(`${baseUrl}/${normalized}`);
+};
+
 const DoctorsList = () => {
-  const { doctors, admintoken, getAllDoctors, changeAvailability } =
+  const { doctors, admintoken, backendurl, getAllDoctors, changeAvailability } =
     useContext(AdminContext);
 
   useEffect(() => {
@@ -29,7 +74,7 @@ const DoctorsList = () => {
             className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition p-4 flex flex-col items-center text-center"
           >
             <img
-              src={doctor.image}
+              src={resolveImageUrl(doctor.image, backendurl)}
               alt={doctor.name}
               loading="lazy"
               className="w-24 h-24 object-cover rounded-full border-2 border-indigo-500"
