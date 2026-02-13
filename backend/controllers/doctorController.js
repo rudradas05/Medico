@@ -194,6 +194,103 @@ const appointmentCancel = async (req, res) => {
   }
 };
 
+const addPrescription = async (req, res) => {
+  try {
+    const { docId, appointmentId, diagnosis = "", notes = "", medicines = [] } =
+      req.body;
+
+    if (!docId || !appointmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Doctor ID and appointment ID are required",
+      });
+    }
+
+    const appointment = await appointmentModel.findById(appointmentId);
+    if (!appointment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Appointment not found" });
+    }
+
+    if (String(appointment.docId) !== String(docId)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized action" });
+    }
+
+    if (appointment.cancelled) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot add prescription for a cancelled appointment",
+      });
+    }
+
+    if (!appointment.isCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: "Complete the appointment before adding a prescription",
+      });
+    }
+
+    let parsedMedicines = medicines;
+
+    if (typeof parsedMedicines === "string") {
+      try {
+        parsedMedicines = JSON.parse(parsedMedicines);
+      } catch {
+        parsedMedicines = [];
+      }
+    }
+
+    if (!Array.isArray(parsedMedicines)) {
+      return res.status(400).json({
+        success: false,
+        message: "Medicines should be an array",
+      });
+    }
+
+    const normalizedMedicines = parsedMedicines
+      .map((item) => ({
+        name: String(item?.name || "").trim(),
+        dosage: String(item?.dosage || "").trim(),
+        frequency: String(item?.frequency || "").trim(),
+        duration: String(item?.duration || "").trim(),
+        instructions: String(item?.instructions || "").trim(),
+      }))
+      .filter((item) => item.name);
+
+    const cleanedDiagnosis = String(diagnosis || "").trim();
+    const cleanedNotes = String(notes || "").trim();
+
+    if (!cleanedDiagnosis && !cleanedNotes && normalizedMedicines.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please add diagnosis, notes, or at least one medicine",
+      });
+    }
+
+    appointment.prescription = {
+      diagnosis: cleanedDiagnosis,
+      notes: cleanedNotes,
+      medicines: normalizedMedicines,
+    };
+    appointment.prescribedAt = Date.now();
+
+    await appointment.save();
+
+    res.json({
+      success: true,
+      message: "Prescription saved successfully",
+      prescription: appointment.prescription,
+      prescribedAt: appointment.prescribedAt,
+    });
+  } catch (error) {
+    console.error("Error saving prescription:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 const doctorDashboard = async (req, res) => {
   try {
     const { docId } = req.body;
@@ -278,6 +375,7 @@ export {
   doctorAppointments,
   appointmentComplete,
   appointmentCancel,
+  addPrescription,
   doctorDashboard,
   getDoctorData,
   updateDoctorProfile,

@@ -7,6 +7,8 @@ const ServiceBookings = () => {
   const { backendurl, admintoken } = useContext(AdminContext);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingReportId, setUploadingReportId] = useState(null);
+  const [openingReportId, setOpeningReportId] = useState(null);
 
   const fetchBookings = async () => {
     try {
@@ -60,6 +62,71 @@ const ServiceBookings = () => {
     }
   };
 
+  const uploadReport = async (bookingId, file) => {
+    if (!file) return;
+
+    setUploadingReportId(bookingId);
+
+    try {
+      const formData = new FormData();
+      formData.append("bookingId", bookingId);
+      formData.append("report", file);
+
+      const { data } = await axios.post(
+        `${backendurl}/api/services/admin/upload-report`,
+        formData,
+        { headers: { admintoken } },
+      );
+
+      if (data.success) {
+        toast.success("Lab report uploaded successfully");
+        fetchBookings();
+      } else {
+        toast.error(data.message || "Could not upload report");
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Could not upload the report file",
+      );
+    } finally {
+      setUploadingReportId(null);
+    }
+  };
+
+  const openReport = async (bookingId) => {
+    if (!bookingId) return;
+
+    setOpeningReportId(bookingId);
+
+    try {
+      const { data } = await axios.post(
+        `${backendurl}/api/services/admin/report-url`,
+        { bookingId },
+        { headers: { admintoken } },
+      );
+
+      if (!data.success || !data.reportUrl) {
+        toast.error(data.message || "Could not open report");
+        return;
+      }
+
+      // window.open(data.reportUrl, "_blank", "noopener,noreferrer");
+      const tab = window.open("about:blank", "_blank", "noopener,noreferrer");
+      if (!tab) {
+        toast.error("Popup blocked. Please allow popups.");
+        return;
+      }
+
+      tab.location.href = `${backendurl}/api/services/report-file/${bookingId}?admintoken=${encodeURIComponent(admintoken)}`;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Could not fetch report file",
+      );
+    } finally {
+      setOpeningReportId(null);
+    }
+  };
+
   useEffect(() => {
     fetchBookings();
   }, []);
@@ -83,10 +150,7 @@ const ServiceBookings = () => {
       ) : (
         <div className="space-y-4">
           {bookings.map((booking) => (
-            <div
-              key={booking._id}
-              className="admin-card rounded-2xl p-5"
-            >
+            <div key={booking._id} className="admin-card rounded-2xl p-5">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-grow space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -130,7 +194,7 @@ const ServiceBookings = () => {
                       {booking.slotTime}
                     </div>
                     <div>
-                      <span className="font-medium">Amount:</span> ₹
+                      <span className="font-medium">Amount:</span> INR{" "}
                       {booking.amount}
                     </div>
                     <div>
@@ -139,6 +203,26 @@ const ServiceBookings = () => {
                         {booking.paymentMethod}
                       </span>
                     </div>
+                    {booking.labReportUrl || booking.labReportPublicId ? (
+                      <div className="col-span-2 sm:col-span-4">
+                        <span className="font-medium">Lab Report:</span>{" "}
+                        <button
+                          type="button"
+                          onClick={() => openReport(booking._id)}
+                          disabled={openingReportId === booking._id}
+                          className="text-primary hover:underline disabled:opacity-50"
+                        >
+                          {openingReportId === booking._id
+                            ? "Opening..."
+                            : booking.labReportName || "View uploaded report"}
+                        </button>
+                      </div>
+                    ) : booking.isCompleted ? (
+                      <div className="col-span-2 sm:col-span-4 text-amber-700">
+                        <span className="font-medium">Lab Report:</span> Not
+                        uploaded yet
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -157,6 +241,34 @@ const ServiceBookings = () => {
                     >
                       Cancel
                     </button>
+                  </div>
+                )}
+
+                {!booking.cancelled && booking.isCompleted && (
+                  <div className="flex gap-2 flex-shrink-0 sm:flex-col">
+                    <input
+                      id={`lab-report-${booking._id}`}
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.png,.jpg,.jpeg,.webp"
+                      onChange={(event) =>
+                        uploadReport(booking._id, event.target.files?.[0])
+                      }
+                    />
+                    <label
+                      htmlFor={`lab-report-${booking._id}`}
+                      className={`cursor-pointer rounded-md px-3 py-1.5 text-center text-xs font-medium transition ${
+                        uploadingReportId === booking._id
+                          ? "bg-gray-100 text-gray-500"
+                          : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                      }`}
+                    >
+                      {uploadingReportId === booking._id
+                        ? "Uploading..."
+                        : booking.labReportUrl || booking.labReportPublicId
+                          ? "Replace Report"
+                          : "Upload Report"}
+                    </label>
                   </div>
                 )}
               </div>

@@ -85,6 +85,31 @@ const DoctorContextProvider = (props) => {
     }
   };
 
+  const savePrescription = async ({ appointmentId, diagnosis, notes, medicines }) => {
+    try {
+      const { data } = await axios.post(
+        `${backendurl}/api/doctor/add-prescription`,
+        { appointmentId, diagnosis, notes, medicines },
+        { headers: { doctortoken } }
+      );
+
+      if (data.success) {
+        toast.success(data.message || "Prescription saved.");
+        await getDoctorAppointments();
+        return { success: true };
+      }
+
+      toast.error(data.message || "Could not save prescription.");
+      return { success: false };
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "We couldn't save this prescription. Please try again."
+      );
+      return { success: false };
+    }
+  };
+
   const getDashData = async () => {
     try {
       const { data } = await axios.get(`${backendurl}/api/doctor/dashboard`, {
@@ -132,6 +157,7 @@ const DoctorContextProvider = (props) => {
     getDoctorAppointments,
     completeAppointment,
     cancelAppointment,
+    savePrescription,
     getDashData,
     dashData,
     setDashData,

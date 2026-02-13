@@ -14,6 +14,18 @@ const isSlotInPast = (slotDate, slotTime) => {
   return parsed <= new Date();
 };
 
+const extractFormat = (fileName = "", fallback = "") => {
+  if (fallback) return String(fallback).toLowerCase();
+  const parts = String(fileName || "").split(".");
+  return parts.length > 1 ? parts.pop().toLowerCase() : "";
+};
+
+const getReportAccessUrl = (booking) => {
+  // The secure_url saved during upload is a permanent public URL.
+  // Using it directly is the most reliable way to serve the file.
+  return booking?.labReportUrl || "";
+};
+
 // ─── PUBLIC ────────────────────────────────────────────────────
 
 const listServices = async (req, res) => {
@@ -128,6 +140,54 @@ const getUserServiceBookings = async (req, res) => {
       .find({ userId })
       .sort({ date: -1 });
     res.json({ success: true, bookings });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getUserServiceReportUrl = async (req, res) => {
+  try {
+    const { userId, bookingId } = req.body;
+
+    if (!userId || !bookingId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
+
+    const booking = await serviceBookingModel.findById(bookingId);
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    if (String(booking.userId) !== String(userId)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized action" });
+    }
+
+    if (!booking.labReportUrl && !booking.labReportPublicId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Report not uploaded yet" });
+    }
+
+    const reportUrl = getReportAccessUrl(booking);
+    if (!reportUrl) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Could not generate report URL" });
+    }
+
+    res.json({
+      success: true,
+      reportUrl,
+      reportName: booking.labReportName || "Lab Report",
+      reportMimeType: booking.labReportMimeType || "",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
@@ -516,6 +576,173 @@ const getAllServiceBookings = async (req, res) => {
   }
 };
 
+const getAdminServiceReportUrl = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+
+    if (!bookingId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Booking ID required" });
+    }
+
+    const booking = await serviceBookingModel.findById(bookingId);
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    if (!booking.labReportUrl && !booking.labReportPublicId) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Report not uploaded yet" });
+    }
+
+    const reportUrl = getReportAccessUrl(booking);
+    if (!reportUrl) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Could not generate report URL" });
+    }
+
+    res.json({
+      success: true,
+      reportUrl,
+      reportName: booking.labReportName || "Lab Report",
+      reportMimeType: booking.labReportMimeType || "",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const streamServiceReport = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const token = req.query.token || "";
+    const admintoken = req.query.admintoken || "";
+
+    // Verify at least one valid auth token
+    const jwt = (await import("jsonwebtoken")).default;
+    let authorised = false;
+    let requestUserId = null;
+
+    if (admintoken) {
+      try {
+        const decoded = jwt.verify(admintoken, process.env.JWT_SECRET);
+        if (decoded === process.env.ADMIN_EMAIL + process.env.ADMIN_PASSWORD) {
+          authorised = true;
+        }
+      } catch (_) {}
+    }
+
+    if (!authorised && token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded?.id) {
+          authorised = true;
+          requestUserId = decoded.id;
+        }
+      } catch (_) {}
+    }
+
+    if (!authorised) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const booking = await serviceBookingModel.findById(bookingId);
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    // If user token, verify ownership
+    if (requestUserId && String(booking.userId) !== String(requestUserId)) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const fileUrl = booking.labReportUrl;
+    if (!fileUrl) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Report not uploaded yet" });
+    }
+
+    // Fetch the file from Cloudinary and pipe it with inline disposition
+    const https = await import("https");
+    const http = await import("http");
+    const requestModule = fileUrl.startsWith("https") ? https : http;
+
+    const fetchAndPipe = (url, redirectCount = 0) => {
+      if (redirectCount > 5) {
+        if (!res.headersSent) {
+          return res
+            .status(502)
+            .json({ success: false, message: "Too many redirects" });
+        }
+        return;
+      }
+
+      requestModule
+        .get(url, (upstream) => {
+          // Follow redirects
+          if (
+            [301, 302, 303, 307, 308].includes(upstream.statusCode) &&
+            upstream.headers.location
+          ) {
+            upstream.resume(); // consume response to free socket
+            return fetchAndPipe(upstream.headers.location, redirectCount + 1);
+          }
+
+          if (upstream.statusCode < 200 || upstream.statusCode >= 300) {
+            upstream.resume();
+            if (!res.headersSent) {
+              return res.status(502).json({
+                success: false,
+                message: "Could not fetch report file",
+              });
+            }
+            return;
+          }
+
+          const contentType =
+            booking.labReportMimeType ||
+            upstream.headers["content-type"] ||
+            "application/octet-stream";
+          const fileName = booking.labReportName || "lab-report";
+
+          res.setHeader("Content-Type", contentType);
+          res.setHeader(
+            "Content-Disposition",
+            `inline; filename="${fileName}"`,
+          );
+          res.setHeader("Cache-Control", "private, max-age=300");
+
+          upstream.pipe(res);
+        })
+        .on("error", (err) => {
+          console.error("Report proxy fetch error:", err);
+          if (!res.headersSent) {
+            res.status(502).json({
+              success: false,
+              message: "Could not fetch report file",
+            });
+          }
+        });
+    };
+
+    fetchAndPipe(fileUrl);
+  } catch (error) {
+    console.error(error);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+};
+
 const completeServiceBooking = async (req, res) => {
   try {
     const { bookingId } = req.body;
@@ -575,11 +802,88 @@ const adminCancelServiceBooking = async (req, res) => {
   }
 };
 
+const uploadServiceLabReport = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    const reportFile = req.file;
+
+    if (!bookingId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Booking ID required" });
+    }
+
+    if (!reportFile) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Please upload a report file" });
+    }
+
+    const booking = await serviceBookingModel.findById(bookingId);
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    if (booking.cancelled) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot upload report for a cancelled booking",
+      });
+    }
+
+    if (!booking.isCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: "Complete the booking before uploading a report",
+      });
+    }
+
+    const uploadResult = await cloudinary.uploader.upload(reportFile.path, {
+      resource_type: "raw",
+      folder: "medico/lab-reports",
+      use_filename: true,
+      unique_filename: true,
+    });
+
+    booking.labReportUrl = uploadResult.secure_url;
+    booking.labReportName = reportFile.originalname || "";
+    booking.labReportMimeType = reportFile.mimetype || "";
+    booking.labReportPublicId = uploadResult.public_id || "";
+    booking.labReportFormat = extractFormat(
+      reportFile.originalname,
+      uploadResult.format,
+    );
+    booking.labReportResourceType = uploadResult.resource_type || "raw";
+    booking.labReportUploadedAt = Date.now();
+
+    await booking.save();
+
+    const reportUrl = getReportAccessUrl(booking);
+
+    res.json({
+      success: true,
+      message: "Lab report uploaded successfully",
+      report: {
+        url: reportUrl || booking.labReportUrl,
+        name: booking.labReportName,
+        mimeType: booking.labReportMimeType,
+        uploadedAt: booking.labReportUploadedAt,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   listServices,
   getServiceById,
   bookService,
   getUserServiceBookings,
+  getUserServiceReportUrl,
   cancelServiceBooking,
   rescheduleServiceBooking,
   createServiceCheckoutSession,
@@ -588,6 +892,9 @@ export {
   updateService,
   deleteService,
   getAllServiceBookings,
+  getAdminServiceReportUrl,
   completeServiceBooking,
   adminCancelServiceBooking,
+  uploadServiceLabReport,
+  streamServiceReport,
 };

@@ -11,13 +11,7 @@ import { toast } from "react-toastify";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { loadStripe } from "@stripe/stripe-js";
 import { FaRegStar, FaStar } from "react-icons/fa";
-import {
-  addDays,
-  addMinutes,
-  format,
-  setHours,
-  setMinutes,
-} from "date-fns";
+import { addDays, addMinutes, format, setHours, setMinutes } from "date-fns";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -113,6 +107,16 @@ const MyAppointments = () => {
   const [rescheduleTime, setRescheduleTime] = useState("");
   const [rescheduleDays, setRescheduleDays] = useState([]);
   const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false);
+  const [prescriptionModal, setPrescriptionModal] = useState({
+    open: false,
+    appointment: null,
+  });
+  const [reportModal, setReportModal] = useState({
+    open: false,
+    booking: null,
+    reportUrl: "",
+  });
+  const [openingReportId, setOpeningReportId] = useState(null);
 
   const months = [
     "Jan",
@@ -274,6 +278,132 @@ const MyAppointments = () => {
     );
   };
 
+  const hasPrescriptionData = (appointment) => {
+    const prescription = appointment?.prescription;
+    if (!prescription) return false;
+
+    const hasMedicines = Array.isArray(prescription.medicines)
+      ? prescription.medicines.some((medicine) => medicine?.name)
+      : false;
+
+    return Boolean(
+      prescription.diagnosis?.trim() ||
+      prescription.notes?.trim() ||
+      hasMedicines,
+    );
+  };
+
+  const openPrescriptionDetails = (appointment) => {
+    setPrescriptionModal({ open: true, appointment });
+  };
+
+  const closePrescriptionDetails = () => {
+    setPrescriptionModal({ open: false, appointment: null });
+  };
+
+  const closeReportModal = () => {
+    setReportModal({ open: false, booking: null, reportUrl: "" });
+  };
+
+  const openServiceReport = async (booking) => {
+    if (!booking?._id) return;
+
+    setOpeningReportId(booking._id);
+
+    try {
+      const { data } = await axios.post(
+        `${backendurl}/api/services/user/report-url`,
+        { bookingId: booking._id },
+        { headers: { token } },
+      );
+
+      if (!data.success || !data.reportUrl) {
+        toast.error(data.message || "Could not open report.");
+        return;
+      }
+
+      // const proxyUrl = `${backendurl}/api/services/report-file/${booking._id}?token=${encodeURIComponent(token)}`;
+
+      // setReportModal({
+      //   open: true,
+      //   booking: {
+      //     ...booking,
+      //     labReportName: data.reportName || booking.labReportName,
+      //     labReportMimeType: data.reportMimeType || booking.labReportMimeType,
+      //   },
+      //   reportUrl: proxyUrl,
+      // });
+      const proxyUrl = `${backendurl}/api/services/report-file/${booking._id}?token=${encodeURIComponent(
+        token,
+      )}`;
+
+      setReportModal({
+        open: true,
+        booking: {
+          ...booking,
+          labReportName: data.reportName || booking.labReportName,
+          labReportMimeType: data.reportMimeType || booking.labReportMimeType,
+        },
+        reportUrl: proxyUrl,
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not open report.");
+    } finally {
+      setOpeningReportId(null);
+    }
+  };
+
+  const isPdfReport = (reportUrl, mimeType) => {
+    const normalizedMime = String(mimeType || "").toLowerCase();
+    if (normalizedMime.includes("pdf")) return true;
+    return /\.pdf($|\?)/i.test(String(reportUrl || ""));
+  };
+
+  const isImageReport = (mimeType) =>
+    String(mimeType || "")
+      .toLowerCase()
+      .startsWith("image/");
+
+  const prescriptionsList = useMemo(
+    () =>
+      appointments
+        .filter((appointment) => {
+          if (!appointment.isCompleted) return false;
+          const prescription = appointment?.prescription;
+          if (!prescription) return false;
+          const hasMedicines = Array.isArray(prescription.medicines)
+            ? prescription.medicines.some((medicine) => medicine?.name)
+            : false;
+          return Boolean(
+            prescription.diagnosis?.trim() ||
+            prescription.notes?.trim() ||
+            hasMedicines,
+          );
+        })
+        .sort((a, b) => {
+          const aTime = a.prescribedAt || a.reviewedAt || a.date || 0;
+          const bTime = b.prescribedAt || b.reviewedAt || b.date || 0;
+          return bTime - aTime;
+        }),
+    [appointments],
+  );
+
+  const labReportsList = useMemo(
+    () =>
+      serviceBookings
+        .filter((booking) => booking.labReportUrl || booking.labReportPublicId)
+        .sort((a, b) => {
+          const aTime =
+            a.labReportUploadedAt ||
+            new Date(a.updatedAt || a.createdAt || a.date || 0).getTime();
+          const bTime =
+            b.labReportUploadedAt ||
+            new Date(b.updatedAt || b.createdAt || b.date || 0).getTime();
+          return bTime - aTime;
+        }),
+    [serviceBookings],
+  );
+
   const openAppointmentReschedule = async (appointment) => {
     if (isExpired(appointment.slotDate, appointment.slotTime)) {
       toast.error("Past appointments cannot be rescheduled.");
@@ -299,7 +429,10 @@ const MyAppointments = () => {
         return;
       }
 
-      const days = buildSlotsForNextDays(doctor.slots_booked || {}, "appointments");
+      const days = buildSlotsForNextDays(
+        doctor.slots_booked || {},
+        "appointments",
+      );
       const firstAvailableDay = days.find((day) => day.slots.length > 0);
 
       setRescheduleDays(days);
@@ -333,7 +466,9 @@ const MyAppointments = () => {
     setRescheduleModal({ open: true, type: "service", item: booking });
 
     try {
-      const { data } = await axios.get(`${backendurl}/api/services/${serviceId}`);
+      const { data } = await axios.get(
+        `${backendurl}/api/services/${serviceId}`,
+      );
 
       if (!data.success || !data.service) {
         toast.error("Service details could not be loaded.");
@@ -419,7 +554,8 @@ const MyAppointments = () => {
       closeRescheduleModal();
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Could not reschedule. Please try again.",
+        error.response?.data?.message ||
+          "Could not reschedule. Please try again.",
       );
     } finally {
       setReschedulingId(null);
@@ -506,7 +642,7 @@ const MyAppointments = () => {
           rating: ratingValue,
           review: reviewText.trim(),
         },
-        { headers: { token } }
+        { headers: { token } },
       );
 
       if (data.success) {
@@ -517,9 +653,7 @@ const MyAppointments = () => {
         toast.error(data.message || "Could not submit review.");
       }
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Could not submit review."
-      );
+      toast.error(error.response?.data?.message || "Could not submit review.");
     } finally {
       setSubmittingReview(false);
     }
@@ -593,10 +727,10 @@ const MyAppointments = () => {
       </h2>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6 border-b">
+      <div className="mb-6 flex gap-4 overflow-x-auto border-b">
         <button
           onClick={() => setActiveTab("appointments")}
-          className={`pb-2 px-1 text-sm font-medium transition-all border-b-2 ${
+          className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-all ${
             activeTab === "appointments"
               ? "border-primary text-primary"
               : "border-transparent text-gray-500 hover:text-gray-700"
@@ -606,7 +740,7 @@ const MyAppointments = () => {
         </button>
         <button
           onClick={() => setActiveTab("services")}
-          className={`pb-2 px-1 text-sm font-medium transition-all border-b-2 ${
+          className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-all ${
             activeTab === "services"
               ? "border-primary text-primary"
               : "border-transparent text-gray-500 hover:text-gray-700"
@@ -614,6 +748,28 @@ const MyAppointments = () => {
         >
           Service Bookings{" "}
           {serviceBookings.length > 0 && `(${serviceBookings.length})`}
+        </button>
+        <button
+          onClick={() => setActiveTab("reports")}
+          className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-all ${
+            activeTab === "reports"
+              ? "border-primary text-primary"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Lab Reports{" "}
+          {labReportsList.length > 0 && `(${labReportsList.length})`}
+        </button>
+        <button
+          onClick={() => setActiveTab("prescriptions")}
+          className={`whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-all ${
+            activeTab === "prescriptions"
+              ? "border-primary text-primary"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Prescriptions{" "}
+          {prescriptionsList.length > 0 && `(${prescriptionsList.length})`}
         </button>
       </div>
 
@@ -760,6 +916,22 @@ const MyAppointments = () => {
                                 Rate Doctor
                               </button>
                             )}
+
+                            {hasPrescriptionData(appointment) ? (
+                              <button
+                                type="button"
+                                className="w-full rounded-md bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700"
+                                onClick={() =>
+                                  openPrescriptionDetails(appointment)
+                                }
+                              >
+                                Show Prescription
+                              </button>
+                            ) : (
+                              <p className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                                Prescription not added yet.
+                              </p>
+                            )}
                           </div>
                         ) : isExpired(
                             appointment.slotDate,
@@ -790,7 +962,9 @@ const MyAppointments = () => {
 
                             <button
                               className="w-full sm:w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                              onClick={() => openAppointmentReschedule(appointment)}
+                              onClick={() =>
+                                openAppointmentReschedule(appointment)
+                              }
                               disabled={reschedulingId === appointment._id}
                             >
                               {reschedulingId === appointment._id
@@ -912,6 +1086,26 @@ const MyAppointments = () => {
                             {booking.paymentMethod}
                           </span>
                         </p>
+                        {booking.labReportUrl || booking.labReportPublicId ? (
+                          <p>
+                            <span className="font-medium">Lab Report:</span>{" "}
+                            <button
+                              type="button"
+                              className="text-primary hover:underline disabled:opacity-50"
+                              onClick={() => openServiceReport(booking)}
+                              disabled={openingReportId === booking._id}
+                            >
+                              {openingReportId === booking._id
+                                ? "Opening..."
+                                : "Show Report"}
+                            </button>
+                          </p>
+                        ) : booking.isCompleted ? (
+                          <p className="text-amber-700">
+                            <span className="font-medium">Lab Report:</span>{" "}
+                            Pending upload
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 
@@ -919,39 +1113,39 @@ const MyAppointments = () => {
                       {!booking.cancelled &&
                         !booking.isCompleted &&
                         !isExpired(booking.slotDate, booking.slotTime) && (
-                        <>
-                          {!booking.payment &&
-                            booking.paymentMethod === "online" && (
-                              <button
-                                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-teal-600 transition-colors disabled:opacity-50 text-sm"
-                                onClick={() => payServiceBooking(booking._id)}
-                                disabled={payingId === booking._id}
-                              >
-                                {payingId === booking._id
-                                  ? "Processing"
-                                  : "Pay Online"}
-                              </button>
-                            )}
-                          <button
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 text-sm"
-                            onClick={() => openServiceReschedule(booking)}
-                            disabled={reschedulingId === booking._id}
-                          >
-                            {reschedulingId === booking._id
-                              ? "Updating..."
-                              : "Reschedule"}
-                          </button>
-                          <button
-                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 text-sm"
-                            onClick={() => cancelServiceBooking(booking._id)}
-                            disabled={cancelingId === booking._id}
-                          >
-                            {cancelingId === booking._id
-                              ? "Canceling..."
-                              : "Cancel"}
-                          </button>
-                        </>
-                      )}
+                          <>
+                            {!booking.payment &&
+                              booking.paymentMethod === "online" && (
+                                <button
+                                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-teal-600 transition-colors disabled:opacity-50 text-sm"
+                                  onClick={() => payServiceBooking(booking._id)}
+                                  disabled={payingId === booking._id}
+                                >
+                                  {payingId === booking._id
+                                    ? "Processing"
+                                    : "Pay Online"}
+                                </button>
+                              )}
+                            <button
+                              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 text-sm"
+                              onClick={() => openServiceReschedule(booking)}
+                              disabled={reschedulingId === booking._id}
+                            >
+                              {reschedulingId === booking._id
+                                ? "Updating..."
+                                : "Reschedule"}
+                            </button>
+                            <button
+                              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 text-sm"
+                              onClick={() => cancelServiceBooking(booking._id)}
+                              disabled={cancelingId === booking._id}
+                            >
+                              {cancelingId === booking._id
+                                ? "Canceling..."
+                                : "Cancel"}
+                            </button>
+                          </>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -959,6 +1153,254 @@ const MyAppointments = () => {
             </div>
           )}
         </>
+      )}
+
+      {activeTab === "reports" && (
+        <>
+          {labReportsList.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+              No lab reports uploaded yet.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {labReportsList.map((booking) => (
+                <div
+                  key={`report-${booking._id}`}
+                  className="rounded-lg border bg-white p-4 shadow-sm"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {booking.serviceName}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {booking.slotDate} | {booking.slotTime}
+                      </p>
+                      {booking.labReportUploadedAt ? (
+                        <p className="text-xs text-gray-500">
+                          Uploaded:{" "}
+                          {new Date(
+                            booking.labReportUploadedAt,
+                          ).toLocaleString()}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openServiceReport(booking)}
+                      disabled={openingReportId === booking._id}
+                      className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {openingReportId === booking._id
+                        ? "Opening..."
+                        : "Show Report"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === "prescriptions" && (
+        <>
+          {prescriptionsList.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
+              No prescriptions available yet.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {prescriptionsList.map((appointment) => (
+                <div
+                  key={`prescription-${appointment._id}`}
+                  className="rounded-lg border bg-white p-4 shadow-sm"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {appointment.docData?.name || "Doctor"}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {appointment.docData?.speciality || "Specialist"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {formatAppointmentDate(appointment.slotDate)} |{" "}
+                        {appointment.slotTime}
+                      </p>
+                      {appointment.prescription?.diagnosis ? (
+                        <p className="text-xs text-gray-500">
+                          Diagnosis: {appointment.prescription.diagnosis}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openPrescriptionDetails(appointment)}
+                      className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
+                    >
+                      Show Prescription
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {prescriptionModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl sm:p-6">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Prescription Details
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {prescriptionModal.appointment?.docData?.name} |{" "}
+              {formatAppointmentDate(prescriptionModal.appointment?.slotDate)} |{" "}
+              {prescriptionModal.appointment?.slotTime}
+            </p>
+
+            {hasPrescriptionData(prescriptionModal.appointment) ? (
+              <div className="mt-5 space-y-4 text-sm text-gray-700">
+                {prescriptionModal.appointment?.prescription?.diagnosis ? (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Diagnosis
+                    </p>
+                    <p className="mt-1 text-gray-800">
+                      {prescriptionModal.appointment.prescription.diagnosis}
+                    </p>
+                  </div>
+                ) : null}
+
+                {prescriptionModal.appointment?.prescription?.notes ? (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Notes
+                    </p>
+                    <p className="mt-1 text-gray-800">
+                      {prescriptionModal.appointment.prescription.notes}
+                    </p>
+                  </div>
+                ) : null}
+
+                {Array.isArray(
+                  prescriptionModal.appointment?.prescription?.medicines,
+                ) &&
+                prescriptionModal.appointment.prescription.medicines.length >
+                  0 ? (
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                      Medicines
+                    </p>
+                    <div className="mt-2 space-y-2">
+                      {prescriptionModal.appointment.prescription.medicines.map(
+                        (medicine, index) => (
+                          <div
+                            key={`${prescriptionModal.appointment._id}-rx-${index}`}
+                            className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs text-indigo-900"
+                          >
+                            <p className="font-semibold">
+                              {index + 1}. {medicine.name}
+                            </p>
+                            <p className="mt-1">
+                              {medicine.dosage
+                                ? `Dosage: ${medicine.dosage}`
+                                : ""}
+                              {medicine.frequency
+                                ? ` | ${medicine.frequency}`
+                                : ""}
+                              {medicine.duration
+                                ? ` | ${medicine.duration}`
+                                : ""}
+                            </p>
+                            {medicine.instructions ? (
+                              <p className="mt-1">
+                                Instructions: {medicine.instructions}
+                              </p>
+                            ) : null}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
+                Prescription not available.
+              </p>
+            )}
+
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={closePrescriptionDetails}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reportModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
+          <div className="w-full max-w-4xl rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl sm:p-6">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Service Report
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {reportModal.booking?.serviceName} |{" "}
+              {reportModal.booking?.slotDate} | {reportModal.booking?.slotTime}
+            </p>
+
+            <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
+              {isImageReport(reportModal.booking?.labReportMimeType) ? (
+                <img
+                  src={reportModal.reportUrl}
+                  alt={reportModal.booking?.labReportName || "Lab report"}
+                  className="max-h-[60vh] w-full rounded-lg object-contain"
+                />
+              ) : isPdfReport(
+                  reportModal.reportUrl,
+                  reportModal.booking?.labReportMimeType,
+                ) ? (
+                <iframe
+                  title="Lab Report Preview"
+                  src={reportModal.reportUrl}
+                  className="h-[60vh] w-full rounded-lg border border-gray-200 bg-white"
+                />
+              ) : (
+                <div className="flex h-[40vh] items-center justify-center text-sm text-gray-600">
+                  Preview not available for this file type.
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={closeReportModal}
+                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <a
+                href={reportModal.reportUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 text-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-600"
+              >
+                Open In New Tab
+              </a>
+            </div>
+          </div>
+        </div>
       )}
 
       {rescheduleModal.open && (
