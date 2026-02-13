@@ -480,6 +480,148 @@ const appointmentsList = async (req, res) => {
   }
 };
 
+const isSlotInPast = (slotDate, slotTime) => {
+  const parsed = new Date(`${slotDate} ${slotTime}`);
+  if (Number.isNaN(parsed.getTime())) {
+    return true;
+  }
+  return parsed <= new Date();
+};
+
+const rescheduleAppointment = async (req, res) => {
+  try {
+    const { userId, appointmentId, slotDate, slotTime } = req.body;
+
+    if (!userId || !appointmentId || !slotDate || !slotTime) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
+
+    const appointment = await appointmentModel.findById(appointmentId);
+    if (!appointment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Appointment not found" });
+    }
+
+    if (String(appointment.userId) !== String(userId)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized action" });
+    }
+
+    if (appointment.cancelled) {
+      return res.status(400).json({
+        success: false,
+        message: "Cancelled appointments cannot be rescheduled",
+      });
+    }
+
+    if (appointment.isCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: "Completed appointments cannot be rescheduled",
+      });
+    }
+
+    if (isSlotInPast(appointment.slotDate, appointment.slotTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "Past appointments cannot be rescheduled",
+      });
+    }
+
+    if (isSlotInPast(slotDate, slotTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select a future slot",
+      });
+    }
+
+    if (appointment.slotDate === slotDate && appointment.slotTime === slotTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Please choose a different slot",
+      });
+    }
+
+    const targetSlotPath = `slots_booked.${slotDate}`;
+    const oldSlotPath = `slots_booked.${appointment.slotDate}`;
+
+    const reserveSlot = await doctorModel.updateOne(
+      {
+        _id: appointment.docId,
+        available: true,
+        $or: [
+          { [targetSlotPath]: { $exists: false } },
+          { [targetSlotPath]: { $nin: [slotTime] } },
+        ],
+      },
+      { $addToSet: { [targetSlotPath]: slotTime } },
+    );
+
+    if (!reserveSlot.modifiedCount) {
+      return res.status(409).json({
+        success: false,
+        message: "Selected slot is no longer available",
+      });
+    }
+
+    const updateAppointment = await appointmentModel.updateOne(
+      {
+        _id: appointmentId,
+        userId,
+        cancelled: false,
+        isCompleted: false,
+        slotDate: appointment.slotDate,
+        slotTime: appointment.slotTime,
+      },
+      { $set: { slotDate, slotTime } },
+    );
+
+    if (!updateAppointment.modifiedCount) {
+      await doctorModel.updateOne(
+        { _id: appointment.docId },
+        { $pull: { [targetSlotPath]: slotTime } },
+      );
+
+      return res.status(409).json({
+        success: false,
+        message: "Appointment changed while rescheduling. Please try again",
+      });
+    }
+
+    await doctorModel.updateOne(
+      { _id: appointment.docId },
+      { $pull: { [oldSlotPath]: appointment.slotTime } },
+    );
+
+    const doctorSlots = await doctorModel
+      .findById(appointment.docId)
+      .select("slots_booked")
+      .lean();
+
+    if (doctorSlots?.slots_booked?.[appointment.slotDate]?.length === 0) {
+      await doctorModel.updateOne(
+        { _id: appointment.docId },
+        { $unset: { [oldSlotPath]: 1 } },
+      );
+    }
+
+    res.json({
+      success: true,
+      message: "Appointment rescheduled successfully",
+      appointmentId,
+      slotDate,
+      slotTime,
+    });
+  } catch (error) {
+    console.error("Error rescheduling appointment:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 const submitDoctorReview = async (req, res) => {
   try {
     const { userId, appointmentId, rating, review = "" } = req.body;
@@ -727,6 +869,7 @@ export {
   updateUserData,
   bookAppointment,
   appointmentsList,
+  rescheduleAppointment,
   submitDoctorReview,
   testimonialsList,
   cancelAppointment,

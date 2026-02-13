@@ -8,6 +8,7 @@ import {
   bookService,
   getUserServiceBookings,
   cancelServiceBooking,
+  rescheduleServiceBooking,
   createServiceCheckoutSession,
   verifyServicePayment,
   addService,
@@ -27,6 +28,7 @@ serviceRouter.get("/list", listServices);
 serviceRouter.post("/book", authUser, bookService);
 serviceRouter.post("/user/bookings", authUser, getUserServiceBookings);
 serviceRouter.post("/cancel-booking", authUser, cancelServiceBooking);
+serviceRouter.post("/reschedule-booking", authUser, rescheduleServiceBooking);
 serviceRouter.post(
   "/create-checkout-session",
   authUser,

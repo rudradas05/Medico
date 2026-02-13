@@ -11,8 +11,21 @@ import { toast } from "react-toastify";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { loadStripe } from "@stripe/stripe-js";
 import { FaRegStar, FaStar } from "react-icons/fa";
+import {
+  addDays,
+  addMinutes,
+  format,
+  setHours,
+  setMinutes,
+} from "date-fns";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+const BOOKING_WINDOW_DAYS = 7;
+const SLOT_CONFIG = {
+  appointments: { startHour: 10, endHour: 21, intervalMinutes: 30 },
+  services: { startHour: 9, endHour: 21, intervalMinutes: 30 },
+};
 
 const SummaryCard = ({ label, value, tone }) => {
   const tones = {
@@ -71,19 +84,35 @@ const RatingStars = ({ value = 0, onChange, readOnly = false }) => {
 };
 
 const MyAppointments = () => {
-  const { backendurl, token, getDoctorsData, logoutUser, currencySymbol } =
-    useContext(AppContext);
+  const {
+    backendurl,
+    token,
+    doctors,
+    getDoctorsData,
+    logoutUser,
+    currencySymbol,
+  } = useContext(AppContext);
   const [appointments, setAppointments] = useState([]);
   const [serviceBookings, setServiceBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cancelingId, setCancelingId] = useState(null);
   const [payingId, setPayingId] = useState(null);
+  const [reschedulingId, setReschedulingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("appointments");
   const [reviewingAppointmentId, setReviewingAppointmentId] = useState(null);
   const [ratingValue, setRatingValue] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [rescheduleModal, setRescheduleModal] = useState({
+    open: false,
+    type: null,
+    item: null,
+  });
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [rescheduleDays, setRescheduleDays] = useState([]);
+  const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false);
 
   const months = [
     "Jan",
@@ -149,6 +178,58 @@ const MyAppointments = () => {
     return appointmentDateTime < new Date();
   };
 
+  const buildSlotsForNextDays = useCallback((slotsBooked = {}, slotType) => {
+    const config = SLOT_CONFIG[slotType];
+    const now = new Date();
+
+    return Array.from({ length: BOOKING_WINDOW_DAYS }, (_, index) => {
+      const date = addDays(now, index);
+      const isoDate = format(date, "yyyy-MM-dd");
+
+      let startTime = setHours(setMinutes(date, 0), config.startHour);
+      const endTime = setHours(setMinutes(date, 0), config.endHour);
+
+      if (isoDate === format(now, "yyyy-MM-dd")) {
+        if (now >= endTime) {
+          return { isoDate, date, slots: [] };
+        }
+
+        if (now > startTime) {
+          const roundedMinutes = now.getMinutes() < 30 ? 30 : 60;
+          startTime = setMinutes(now, roundedMinutes);
+        }
+      }
+
+      const slots = [];
+
+      while (startTime <= endTime) {
+        const slot = format(startTime, "hh:mm a");
+        const isBooked = slotsBooked?.[isoDate]?.includes(slot) ?? false;
+
+        if (!isBooked) {
+          slots.push(slot);
+        }
+
+        startTime = addMinutes(startTime, config.intervalMinutes);
+      }
+
+      return { isoDate, date, slots };
+    });
+  }, []);
+
+  const selectedRescheduleDay = useMemo(
+    () => rescheduleDays.find((day) => day.isoDate === rescheduleDate),
+    [rescheduleDays, rescheduleDate],
+  );
+
+  const closeRescheduleModal = () => {
+    setRescheduleModal({ open: false, type: null, item: null });
+    setRescheduleDate("");
+    setRescheduleTime("");
+    setRescheduleDays([]);
+    setLoadingRescheduleSlots(false);
+  };
+
   const summary = useMemo(() => {
     let upcoming = 0,
       completed = 0,
@@ -191,6 +272,158 @@ const MyAppointments = () => {
         Pending
       </span>
     );
+  };
+
+  const openAppointmentReschedule = async (appointment) => {
+    if (isExpired(appointment.slotDate, appointment.slotTime)) {
+      toast.error("Past appointments cannot be rescheduled.");
+      return;
+    }
+
+    setLoadingRescheduleSlots(true);
+    setRescheduleModal({ open: true, type: "appointment", item: appointment });
+
+    try {
+      let doctor = doctors.find((item) => item._id === appointment.docId);
+
+      if (!doctor) {
+        const { data } = await axios.get(`${backendurl}/api/doctor/list`);
+        if (data.success && Array.isArray(data.doctors)) {
+          doctor = data.doctors.find((item) => item._id === appointment.docId);
+        }
+      }
+
+      if (!doctor) {
+        toast.error("Doctor availability data could not be loaded.");
+        closeRescheduleModal();
+        return;
+      }
+
+      const days = buildSlotsForNextDays(doctor.slots_booked || {}, "appointments");
+      const firstAvailableDay = days.find((day) => day.slots.length > 0);
+
+      setRescheduleDays(days);
+      setRescheduleDate(firstAvailableDay?.isoDate || "");
+      setRescheduleTime("");
+    } catch (error) {
+      toast.error("Could not load available slots.");
+      closeRescheduleModal();
+    } finally {
+      setLoadingRescheduleSlots(false);
+    }
+  };
+
+  const openServiceReschedule = async (booking) => {
+    if (isExpired(booking.slotDate, booking.slotTime)) {
+      toast.error("Past service bookings cannot be rescheduled.");
+      return;
+    }
+
+    const serviceId =
+      typeof booking.serviceId === "string"
+        ? booking.serviceId
+        : booking.serviceId?._id;
+
+    if (!serviceId) {
+      toast.error("Service ID is missing for this booking.");
+      return;
+    }
+
+    setLoadingRescheduleSlots(true);
+    setRescheduleModal({ open: true, type: "service", item: booking });
+
+    try {
+      const { data } = await axios.get(`${backendurl}/api/services/${serviceId}`);
+
+      if (!data.success || !data.service) {
+        toast.error("Service details could not be loaded.");
+        closeRescheduleModal();
+        return;
+      }
+
+      const days = buildSlotsForNextDays(
+        data.service.slots_booked || {},
+        "services",
+      );
+      const firstAvailableDay = days.find((day) => day.slots.length > 0);
+
+      setRescheduleDays(days);
+      setRescheduleDate(firstAvailableDay?.isoDate || "");
+      setRescheduleTime("");
+    } catch (error) {
+      toast.error("Could not load available slots.");
+      closeRescheduleModal();
+    } finally {
+      setLoadingRescheduleSlots(false);
+    }
+  };
+
+  const submitReschedule = async () => {
+    if (!rescheduleModal?.item) return;
+
+    if (!rescheduleDate || !rescheduleTime) {
+      toast.error("Please select a date and time slot.");
+      return;
+    }
+
+    const isSameSlot =
+      rescheduleModal.item.slotDate === rescheduleDate &&
+      rescheduleModal.item.slotTime === rescheduleTime;
+
+    if (isSameSlot) {
+      toast.error("Please choose a different date or time.");
+      return;
+    }
+
+    setReschedulingId(rescheduleModal.item._id);
+
+    try {
+      if (rescheduleModal.type === "appointment") {
+        const { data } = await axios.post(
+          `${backendurl}/api/user/reschedule-appointment`,
+          {
+            appointmentId: rescheduleModal.item._id,
+            slotDate: rescheduleDate,
+            slotTime: rescheduleTime,
+          },
+          { headers: { token } },
+        );
+
+        if (!data.success) {
+          toast.error(data.message || "Could not reschedule appointment.");
+          return;
+        }
+
+        toast.success("Appointment rescheduled successfully.");
+        await Promise.all([fetchAppointments(), getDoctorsData()]);
+      } else {
+        const { data } = await axios.post(
+          `${backendurl}/api/services/reschedule-booking`,
+          {
+            bookingId: rescheduleModal.item._id,
+            slotDate: rescheduleDate,
+            slotTime: rescheduleTime,
+          },
+          { headers: { token } },
+        );
+
+        if (!data.success) {
+          toast.error(data.message || "Could not reschedule booking.");
+          return;
+        }
+
+        toast.success("Service booking rescheduled successfully.");
+        await fetchServiceBookings();
+      }
+
+      closeRescheduleModal();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Could not reschedule. Please try again.",
+      );
+    } finally {
+      setReschedulingId(null);
+    }
   };
 
   const handleCancelAppointment = async (appointmentId) => {
@@ -556,6 +789,16 @@ const MyAppointments = () => {
                             )}
 
                             <button
+                              className="w-full sm:w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                              onClick={() => openAppointmentReschedule(appointment)}
+                              disabled={reschedulingId === appointment._id}
+                            >
+                              {reschedulingId === appointment._id
+                                ? "Updating..."
+                                : "Reschedule"}
+                            </button>
+
+                            <button
                               className="w-full sm:w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
                               onClick={() =>
                                 handleCancelAppointment(appointment._id)
@@ -634,6 +877,10 @@ const MyAppointments = () => {
                           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
                             Completed
                           </span>
+                        ) : isExpired(booking.slotDate, booking.slotTime) ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">
+                            Expired
+                          </span>
                         ) : booking.payment ? (
                           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
                             Paid
@@ -669,7 +916,9 @@ const MyAppointments = () => {
                     </div>
 
                     <div className="flex flex-col gap-2 sm:items-end sm:justify-end">
-                      {!booking.cancelled && !booking.isCompleted && (
+                      {!booking.cancelled &&
+                        !booking.isCompleted &&
+                        !isExpired(booking.slotDate, booking.slotTime) && (
                         <>
                           {!booking.payment &&
                             booking.paymentMethod === "online" && (
@@ -683,6 +932,15 @@ const MyAppointments = () => {
                                   : "Pay Online"}
                               </button>
                             )}
+                          <button
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 text-sm"
+                            onClick={() => openServiceReschedule(booking)}
+                            disabled={reschedulingId === booking._id}
+                          >
+                            {reschedulingId === booking._id
+                              ? "Updating..."
+                              : "Reschedule"}
+                          </button>
                           <button
                             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 text-sm"
                             onClick={() => cancelServiceBooking(booking._id)}
@@ -701,6 +959,135 @@ const MyAppointments = () => {
             </div>
           )}
         </>
+      )}
+
+      {rescheduleModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
+          <div className="w-full max-w-3xl rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl sm:p-6">
+            <h3 className="text-xl font-semibold text-gray-900">
+              {rescheduleModal.type === "appointment"
+                ? "Reschedule Appointment"
+                : "Reschedule Service Booking"}
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Current slot:{" "}
+              <span className="font-medium text-gray-700">
+                {formatAppointmentDate(rescheduleModal.item?.slotDate)} |{" "}
+                {rescheduleModal.item?.slotTime}
+              </span>
+            </p>
+
+            {loadingRescheduleSlots ? (
+              <div className="mt-6 flex h-32 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              </div>
+            ) : rescheduleDays.every((day) => day.slots.length === 0) ? (
+              <div className="mt-5 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+                No slots are available in the next 7 days.
+              </div>
+            ) : (
+              <>
+                <div className="mt-5">
+                  <p className="mb-2 text-sm font-medium text-gray-700">
+                    Select Date
+                  </p>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {rescheduleDays.map((day) => {
+                      const isSelected = day.isoDate === rescheduleDate;
+
+                      return (
+                        <button
+                          key={day.isoDate}
+                          type="button"
+                          onClick={() => {
+                            setRescheduleDate(day.isoDate);
+                            setRescheduleTime("");
+                          }}
+                          className={`min-w-[92px] rounded-xl border px-3 py-2 text-center transition ${
+                            isSelected
+                              ? "border-primary bg-teal-50 text-primary"
+                              : "border-gray-200 bg-white text-gray-600 hover:border-teal-200"
+                          } ${day.slots.length === 0 ? "opacity-60" : ""}`}
+                        >
+                          <p className="text-[11px] uppercase tracking-wide">
+                            {format(day.date, "EEE")}
+                          </p>
+                          <p className="text-lg font-semibold leading-5">
+                            {format(day.date, "dd")}
+                          </p>
+                          <p className="text-[11px] uppercase tracking-wide">
+                            {format(day.date, "MMM")}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <p className="mb-2 text-sm font-medium text-gray-700">
+                    Select Time Slot
+                  </p>
+                  {selectedRescheduleDay?.slots?.length ? (
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+                      {selectedRescheduleDay.slots.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setRescheduleTime(slot)}
+                          className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                            rescheduleTime === slot
+                              ? "border-primary bg-primary text-white"
+                              : "border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary"
+                          }`}
+                        >
+                          {slot.toLowerCase()}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
+                      No slots available for this date.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div className="mt-6 flex gap-2">
+              <button
+                type="button"
+                onClick={closeRescheduleModal}
+                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                disabled={reschedulingId === rescheduleModal.item?._id}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitReschedule}
+                disabled={
+                  loadingRescheduleSlots ||
+                  !rescheduleDate ||
+                  !rescheduleTime ||
+                  reschedulingId === rescheduleModal.item?._id
+                }
+                className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition ${
+                  loadingRescheduleSlots ||
+                  !rescheduleDate ||
+                  !rescheduleTime ||
+                  reschedulingId === rescheduleModal.item?._id
+                    ? "cursor-not-allowed bg-gray-300"
+                    : "bg-primary hover:bg-teal-600"
+                }`}
+              >
+                {reschedulingId === rescheduleModal.item?._id
+                  ? "Updating..."
+                  : "Confirm Reschedule"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {reviewingAppointmentId && (

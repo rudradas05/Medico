@@ -6,6 +6,14 @@ import { v2 as cloudinary } from "cloudinary";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+const isSlotInPast = (slotDate, slotTime) => {
+  const parsed = new Date(`${slotDate} ${slotTime}`);
+  if (Number.isNaN(parsed.getTime())) {
+    return true;
+  }
+  return parsed <= new Date();
+};
+
 // ─── PUBLIC ────────────────────────────────────────────────────
 
 const listServices = async (req, res) => {
@@ -169,6 +177,140 @@ const cancelServiceBooking = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const rescheduleServiceBooking = async (req, res) => {
+  try {
+    const { userId, bookingId, slotDate, slotTime } = req.body;
+
+    if (!userId || !bookingId || !slotDate || !slotTime) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
+
+    const booking = await serviceBookingModel.findById(bookingId);
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    if (String(booking.userId) !== String(userId)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized action" });
+    }
+
+    if (booking.cancelled) {
+      return res.status(400).json({
+        success: false,
+        message: "Cancelled bookings cannot be rescheduled",
+      });
+    }
+
+    if (booking.isCompleted) {
+      return res.status(400).json({
+        success: false,
+        message: "Completed bookings cannot be rescheduled",
+      });
+    }
+
+    if (isSlotInPast(booking.slotDate, booking.slotTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "Past bookings cannot be rescheduled",
+      });
+    }
+
+    if (isSlotInPast(slotDate, slotTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select a future slot",
+      });
+    }
+
+    if (booking.slotDate === slotDate && booking.slotTime === slotTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Please choose a different slot",
+      });
+    }
+
+    const targetSlotPath = `slots_booked.${slotDate}`;
+    const oldSlotPath = `slots_booked.${booking.slotDate}`;
+
+    const reserveSlot = await diagnosticServiceModel.updateOne(
+      {
+        _id: booking.serviceId,
+        available: true,
+        $or: [
+          { [targetSlotPath]: { $exists: false } },
+          { [targetSlotPath]: { $nin: [slotTime] } },
+        ],
+      },
+      { $addToSet: { [targetSlotPath]: slotTime } },
+    );
+
+    if (!reserveSlot.modifiedCount) {
+      return res.status(409).json({
+        success: false,
+        message: "Selected slot is no longer available",
+      });
+    }
+
+    const updateBooking = await serviceBookingModel.updateOne(
+      {
+        _id: bookingId,
+        userId,
+        cancelled: false,
+        isCompleted: false,
+        slotDate: booking.slotDate,
+        slotTime: booking.slotTime,
+      },
+      { $set: { slotDate, slotTime } },
+    );
+
+    if (!updateBooking.modifiedCount) {
+      await diagnosticServiceModel.updateOne(
+        { _id: booking.serviceId },
+        { $pull: { [targetSlotPath]: slotTime } },
+      );
+
+      return res.status(409).json({
+        success: false,
+        message: "Booking changed while rescheduling. Please try again",
+      });
+    }
+
+    await diagnosticServiceModel.updateOne(
+      { _id: booking.serviceId },
+      { $pull: { [oldSlotPath]: booking.slotTime } },
+    );
+
+    const serviceSlots = await diagnosticServiceModel
+      .findById(booking.serviceId)
+      .select("slots_booked")
+      .lean();
+
+    if (serviceSlots?.slots_booked?.[booking.slotDate]?.length === 0) {
+      await diagnosticServiceModel.updateOne(
+        { _id: booking.serviceId },
+        { $unset: { [oldSlotPath]: 1 } },
+      );
+    }
+
+    res.json({
+      success: true,
+      message: "Service booking rescheduled successfully",
+      bookingId,
+      slotDate,
+      slotTime,
+    });
+  } catch (error) {
+    console.error("Error rescheduling service booking:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 
@@ -439,6 +581,7 @@ export {
   bookService,
   getUserServiceBookings,
   cancelServiceBooking,
+  rescheduleServiceBooking,
   createServiceCheckoutSession,
   verifyServicePayment,
   addService,

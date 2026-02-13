@@ -11,6 +11,7 @@ import {
   verifyEmail,
   bookAppointment,
   appointmentsList,
+  rescheduleAppointment,
   submitDoctorReview,
   testimonialsList,
   cancelAppointment,
@@ -40,6 +41,7 @@ userRouter.post(
 
 userRouter.post("/book-appointment", authUser, bookAppointment);
 userRouter.get("/appointment", authUser, appointmentsList);
+userRouter.post("/reschedule-appointment", authUser, rescheduleAppointment);
 userRouter.post("/submit-review", authUser, submitDoctorReview);
 userRouter.post("/cancel-appointment", authUser, cancelAppointment);
 userRouter.get("/testimonials", testimonialsList);
